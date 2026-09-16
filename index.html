@@ -1,0 +1,1572 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NovaOS Explorer</title>
+<style>
+:root{
+  --bg:#EDF2F7; --panel:#FFFFFF; --panel2:#F5F8FC; --ink:#14213D; --muted:#5B6B82; --line:#D5DEE8;
+  --accent:#2456E6; --accent-ink:#FFFFFF; --accent-soft:#E3ECFB; --sun:#F2A100; --sun-soft:#FFF3D6;
+  --mark:#FFE58A; --shadow:0 8px 24px rgba(20,33,61,.10); --fs:62%; --fl:44%; --fl2:92%;
+  --radius:14px; --font:"Segoe UI","Trebuchet MS",Avenir,"Helvetica Neue",system-ui,-apple-system,sans-serif;
+  --display:ui-rounded,"SF Pro Rounded","Segoe UI Variable Display","Segoe UI",Avenir,system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1524; --panel:#172035; --panel2:#1C2740; --ink:#E6EDF7; --muted:#96A5BF; --line:#2A3752;
+    --accent:#7BA2FF; --accent-ink:#0E1524; --accent-soft:#213258; --sun:#FFC53D; --sun-soft:#3A2F12;
+    --mark:#7A5B00; --shadow:0 8px 24px rgba(0,0,0,.35); --fs:70%; --fl:70%; --fl2:20%;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1524; --panel:#172035; --panel2:#1C2740; --ink:#E6EDF7; --muted:#96A5BF; --line:#2A3752;
+  --accent:#7BA2FF; --accent-ink:#0E1524; --accent-soft:#213258; --sun:#FFC53D; --sun-soft:#3A2F12;
+  --mark:#7A5B00; --shadow:0 8px 24px rgba(0,0,0,.35); --fs:70%; --fl:70%; --fl2:20%;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--sun);outline-offset:2px;border-radius:8px}
+a{color:var(--accent)}
+mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 2px}
+
+.app{height:100%;display:grid;grid-template-rows:auto 1fr;padding-inline:16px;padding-block:12px;gap:12px}
+/* ---------- top bar ---------- */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;box-shadow:var(--shadow)}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:800;font-size:19px;letter-spacing:-.01em}
+.brand .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--sun));display:grid;place-items:center;color:#fff;font-size:18px;flex:none}
+.brand small{display:block;font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.02em}
+.search{flex:1 1 220px;min-width:160px;position:relative}
+.search input{width:100%;height:42px;border:2px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--ink);padding:0 40px 0 40px;font-size:15px}
+.search input:focus{border-color:var(--accent)}
+.search .ico{position:absolute;left:12px;top:0;height:42px;display:grid;place-items:center;color:var(--muted);pointer-events:none}
+.search .clear{position:absolute;right:6px;top:5px;height:32px;width:32px;border-radius:8px;color:var(--muted)}
+.search .clear:hover{background:var(--accent-soft)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;border:2px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel2)}
+.seg button{height:38px;padding:0 12px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg.sun button[aria-pressed="true"]{background:var(--sun);color:#1a1a1a}
+.iconbtn{height:42px;min-width:42px;padding:0 12px;border:2px solid var(--line);border-radius:12px;background:var(--panel2);font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.iconbtn:hover{border-color:var(--accent)}
+.only-mobile{display:none}
+
+/* ---------- workspace ---------- */
+.work{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:12px;min-height:0}
+.pane{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.pane-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.pane-head .spacer{flex:1}
+.pane-head button{height:30px;padding:0 10px;border-radius:8px;font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink);background:var(--panel2);border:1px solid var(--line)}
+.pane-head button:hover{border-color:var(--accent)}
+.tree{overflow:auto;padding:8px;flex:1;scrollbar-width:thin}
+.tree ul{list-style:none;margin:0;padding:0}
+.tree ul ul{padding-left:18px;border-left:2px dashed var(--line);margin-left:15px}
+.tree li{margin:1px 0}
+.node{display:flex;align-items:center;gap:6px;min-height:40px;padding:4px 8px 4px 4px;border-radius:10px;cursor:pointer;user-select:none}
+.node:hover{background:var(--accent-soft)}
+.node[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.node[aria-selected="true"] .grown{color:inherit;opacity:.8}
+.node .tw{width:26px;height:26px;display:grid;place-items:center;border-radius:6px;color:var(--muted);flex:none;font-size:11px;transition:transform .15s}
+.node[aria-selected="true"] .tw{color:inherit}
+.node .tw.leaf{opacity:.35}
+.node[aria-expanded="true"] .tw{transform:rotate(90deg)}
+.node .ic{font-size:20px;width:28px;text-align:center;flex:none;line-height:1}
+.node .lbl{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.node .kid{font-weight:600;font-size:14px}
+.node .grown{font-size:11px;color:var(--muted)}
+.tree li[hidden]{display:none}
+.tree .top-node{margin-top:4px}
+.tree .top-node > .node{font-family:var(--display)}
+.tree .top-node > .node .kid{font-size:15px}
+.tree .top-node > .node::before{content:"";width:5px;height:26px;border-radius:3px;background:hsl(var(--h) var(--fs) var(--fl));flex:none;margin-right:2px}
+.empty{padding:20px;color:var(--muted);text-align:center}
+
+/* ---------- detail ---------- */
+.detail{overflow:auto;flex:1;padding:18px 22px 40px;scrollbar-width:thin}
+.crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:13px;color:var(--muted);margin-bottom:12px}
+.crumbs button{padding:4px 8px;border-radius:8px;color:var(--ink);font-weight:600}
+.crumbs button:hover{background:var(--accent-soft)}
+.crumbs .sep{opacity:.5}
+.crumbs .here{padding:4px 8px;font-weight:700;color:var(--ink);background:var(--panel2);border-radius:8px}
+.hero{display:flex;gap:16px;align-items:center;margin-bottom:18px}
+.hero .big{width:78px;height:78px;border-radius:22px;display:grid;place-items:center;font-size:42px;background:hsl(var(--h) var(--fs) var(--fl2));border:2px solid hsl(var(--h) var(--fs) var(--fl));flex:none}
+.hero h1{margin:0;font-family:var(--display);font-size:clamp(22px,3vw,32px);line-height:1.15;letter-spacing:-.01em;text-wrap:balance}
+.hero .gname{color:var(--muted);font-size:14px;margin-top:4px;font-family:var(--mono)}
+.hero .folderpill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;margin-top:6px;background:hsl(var(--h) var(--fs) var(--fl2));color:hsl(var(--h) var(--fs) var(--fl))}
+.cards{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-bottom:16px}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.card.kidcard{grid-column:1/-1;background:var(--sun-soft);border-color:color-mix(in srgb,var(--sun) 45%,transparent);font-size:clamp(17px,2vw,21px);line-height:1.45;font-family:var(--display);font-weight:600}
+.card h3{margin:0 0 6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;gap:6px;align-items:center}
+.card p{margin:0}
+details.grown{border:1px solid var(--line);border-radius:12px;background:var(--panel2);margin-bottom:16px}
+details.grown summary{cursor:pointer;padding:12px 16px;font-weight:700;display:flex;align-items:center;gap:8px;list-style:none;min-height:46px}
+details.grown summary::-webkit-details-marker{display:none}
+details.grown summary::before{content:"▸";color:var(--muted);transition:transform .15s}
+details.grown[open] summary::before{transform:rotate(90deg)}
+details.grown .body{padding:0 16px 16px;line-height:1.6;max-width:75ch}
+details.grown .body code{font-family:var(--mono);font-size:.92em;background:var(--accent-soft);padding:1px 5px;border-radius:5px}
+.sect h2{font-family:var(--display);font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:38px;padding:4px 12px 4px 8px;border-radius:999px;border:1.5px solid var(--line);background:var(--panel);font-weight:600;font-size:14px}
+.chip:hover{border-color:var(--accent);background:var(--accent-soft)}
+.chip small{color:var(--muted);font-weight:500;font-size:11px}
+.grid-files{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.file{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:12px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);min-height:96px}
+.file:hover{border-color:var(--accent);background:var(--accent-soft)}
+.file .fi{font-size:30px;line-height:1}
+.file .fk{font-weight:700;font-size:14px;line-height:1.2}
+.file .fg{font-size:11px;color:var(--muted)}
+.file .fc{font-size:11px;color:var(--muted);margin-top:auto}
+.diagram{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:8px}
+.diagram svg{display:block;max-width:100%;height:auto;margin:0 auto}
+.diagram text{font-family:var(--font);fill:var(--ink)}
+.diagram .lk{cursor:pointer}
+.diagram .lk:hover rect{stroke:var(--accent);stroke-width:3}
+body[data-level="kid"] .kid-hide{display:none}
+
+/* ---------- map ---------- */
+.map{overflow:auto;flex:1;padding:18px 22px 30px}
+.map h1{font-family:var(--display);margin:0 0 4px;font-size:clamp(22px,3vw,30px);text-wrap:balance}
+.map .lead{color:var(--muted);margin:0 0 14px;max-width:70ch}
+.map .scroller{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:6px}
+.map svg{display:block;min-width:760px;width:100%;height:auto}
+.map text{font-family:var(--font);fill:var(--ink)}
+.map .layer rect{stroke-width:2}
+.map .lk{cursor:pointer}
+.map .lk:hover rect{stroke-width:4;filter:brightness(1.05)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;color:var(--muted);font-size:13px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:14px;border-radius:4px;display:inline-block}
+
+/* ---------- mobile ---------- */
+.scrim{display:none}
+@media (max-width:840px){
+  .work{grid-template-columns:1fr}
+  .only-mobile{display:inline-flex}
+  .pane.left{position:fixed;inset:0 auto 0 0;width:min(86vw,340px);z-index:30;border-radius:0 var(--radius) var(--radius) 0;transform:translateX(-105%);transition:transform .2s ease}
+  body.drawer-open .pane.left{transform:none}
+  body.drawer-open .scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:20}
+  .detail{padding:14px 14px 40px}
+  .hero .big{width:60px;height:60px;font-size:32px;border-radius:16px}
+  .brand small{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app" id="app">
+  <header class="top">
+    <button class="iconbtn only-mobile" id="drawerBtn" aria-label="Open folders" title="Folders">📂</button>
+    <div class="brand"><div class="logo">✦</div><div>NovaOS Explorer<small>a blueprint for a brand-new operating system</small></div></div>
+    <div class="search">
+      <span class="ico">🔍</span>
+      <input id="search" type="search" placeholder="Search everything… (try “money”, “robot”, “kernel”)" aria-label="Search the system tree" autocomplete="off">
+      <button class="clear" id="clearSearch" aria-label="Clear search" hidden>✕</button>
+    </div>
+    <div class="controls">
+      <div class="seg sun" role="group" aria-label="Reading level">
+        <button id="lvlKid" aria-pressed="true">🧒 Kid</button>
+        <button id="lvlGrown" aria-pressed="false">🎓 Grown-up</button>
+      </div>
+      <div class="seg" role="group" aria-label="View">
+        <button id="viewExplorer" aria-pressed="true">🗂️ Explorer</button>
+        <button id="viewMap" aria-pressed="false">🕸️ How it connects</button>
+      </div>
+      <button class="iconbtn" id="themeBtn" aria-label="Switch light or dark theme" title="Theme">🌗</button>
+    </div>
+  </header>
+
+  <div class="work">
+    <aside class="pane left" id="leftPane">
+      <div class="pane-head">📁 Folders<span class="spacer"></span>
+        <button id="expandAll">Expand all</button><button id="collapseAll">Collapse</button>
+        <button class="only-mobile" id="drawerClose" aria-label="Close folders">✕</button>
+      </div>
+      <nav class="tree" id="tree" aria-label="System tree"></nav>
+    </aside>
+    <main class="pane right" id="rightPane">
+      <div class="pane-head" id="rightHead">📄 Details<span class="spacer"></span><span id="countBadge" style="text-transform:none;letter-spacing:0;font-weight:500"></span></div>
+      <section class="detail" id="detail"></section>
+      <section class="map" id="mapView" hidden></section>
+    </main>
+  </div>
+  <div class="scrim" id="scrim"></div>
+</div>
+
+<script>
+// ------------------------------------------------------------------
+// DATA. Every node: {id, icon, kidName, grownName, kid, why, example, grownUp, talksTo[], children[]}
+// Add a node anywhere by adding another N(...) call. Top-level folders also carry a hue (0-360).
+// ------------------------------------------------------------------
+const N=(id,icon,kidName,grownName,kid,why,example,grownUp,talksTo,children)=>({id,icon,kidName,grownName,kid,why,example,grownUp,talksTo:talksTo||[],children:children||[]});
+const F=(hue,node)=>Object.assign(node,{hue});
+
+const ENGINE=F(215,N("engine","🏭","Engine Room","Kernel & Hardware",
+"The Engine Room is the part of NovaOS you never see but that makes everything else go, like the engine hidden under a car's hood.",
+"If the engine is slow or crashes, every app on top of it is slow or crashes too.",
+"A school building: the boiler, the wiring and the pipes are hidden in the basement, but no classroom works without them.",
+"A hybrid microkernel design: a small privileged core (scheduling, memory, IPC, capabilities) with drivers, file systems and network stacks running as isolated user-space servers, in the spirit of seL4, Fuchsia's Zircon and Redox. The core is written in Rust with a minimal unsafe surface; legacy Linux drivers can be hosted in a driver VM via virtio for hardware breadth during the first years.",
+["locks","playground","platforms"],[
+ N("kernel","🧠","The Brain","Kernel",
+ "The Brain decides who gets to use the computer's parts right now and keeps every program in its own lane.",
+ "Without one boss handing out turns, programs would trample each other and freeze the whole machine.",
+ "A teacher in a busy classroom deciding who speaks, who gets the glue, and making sure nobody grabs someone else's crayons.",
+ "Capability-based microkernel: every resource (memory page, device, channel) is reached only through an unforgeable handle. System calls are few (~40) and message-passing based. Drivers, file systems and even the network stack are user-space servers, so a driver crash restarts one process instead of rebooting the device. Comparable: seL4 (formally verified), Zircon, Redox.",
+ ["scheduler","memory","ipc","sandbox","app-sandbox"],[
+  N("scheduler","⏱️","The Turn-Taker","Scheduler",
+  "The Turn-Taker gives each program a tiny slice of time, so fast that it looks like everything is happening at once.",
+  "It is why your music keeps playing while you draw and a robot helper works in the background.",
+  "Musical chairs at super speed: everyone gets a seat for a fraction of a second, thousands of times a second.",
+  "Deadline-aware EEVDF-style scheduler with QoS classes: realtime (audio, VR frame pacing at 90-120 Hz), interactive (UI thread, input), background, and idle (AI indexing, sync). Latency-critical tasks pin to performance cores on big.LITTLE SoCs; energy-aware placement uses the power manager's budget. Thread priorities are inherited across IPC to avoid priority inversion.",
+  ["power","renderer","ondevice"]),
+  N("memory","🧩","Memory Shelves","Memory Manager",
+  "Memory Shelves hand each program its own shelf space and make sure nobody peeks at or scribbles on somebody else's shelf.",
+  "It stops one buggy or sneaky app from reading your messages or crashing the whole computer.",
+  "Lockers at school: you get your own, with your own key, and you cannot open the one next to it.",
+  "Per-process virtual address spaces with hardware-enforced isolation (MMU, plus ARM MTE / CHERI-style tagging where available). Copy-on-write, demand paging, compressed swap, and memory-pressure signals apps must respond to. Kernel and system services are written in Rust to eliminate most memory-safety bugs (historically ~70% of critical CVEs in mainstream OSes).",
+  ["app-sandbox","scheduler","threat"]),
+  N("ipc","📨","Passing Notes","IPC / Message Bus",
+  "Passing Notes is how programs talk to each other safely: by sending short, checked messages instead of reaching into each other's stuff.",
+  "It lets the camera app hand a photo to Messages without either one being able to snoop on the other.",
+  "Passing folded notes in class through the teacher, who checks who is allowed to send what.",
+  "Zero-copy, capability-carrying channels (like Zircon channels / seL4 endpoints) with a schema-defined interface language (a FIDL/Cap'n Proto-style IDL). Handles are transferred, never guessed, so authority flows explicitly. The same IDL generates bindings for Rust, C++, Swift, Kotlin, TypeScript and Wasm.",
+  ["sdk","permissions","a2a"])]),
+ N("drivers","🔌","Translators","Device Drivers",
+ "Translators teach the Brain how to talk to each gadget: the screen, the keyboard, the camera, the Wi-Fi chip.",
+ "Without the right translator, a piece of hardware is just a silent lump.",
+ "A friend who speaks both English and Robot so you can ask a toy robot to dance.",
+ "User-space driver framework with a stable, versioned driver ABI (unlike Linux's in-tree-only model), so vendors ship binary drivers that survive OS updates. Drivers are sandboxed with IOMMU-enforced DMA limits. For hardware breadth, a Linux compatibility VM (virtio) hosts existing drivers during the transition years.",
+ ["kernel","sensors","gpu","audio-hw","wifi"]),
+ N("gpu","🎨","The Paintbrush","GPU & Graphics Driver",
+ "The Paintbrush is a super-fast chip that draws millions of tiny dots every second so the 3D world looks smooth.",
+ "Every window, avatar and game you see is painted by it, sixty or more times a second.",
+ "A team of a thousand kids each coloring one square of a giant picture at the same time.",
+ "Vulkan 1.3 as the native GPU API (with a Metal backend on Apple platforms via a translation layer like MoltenVK). GPU scheduling with preemption so the compositor never misses a frame; unified memory where hardware allows. The same GPU compute queues run on-device AI inference (see On-device Models) with priority arbitration handled by the scheduler.",
+ ["renderer","shaders","ondevice","scheduler"]),
+ N("storage","💽","The Closet","Storage Stack",
+ "The Closet is where NovaOS keeps everything when the power is off: your drawings, games, and settings.",
+ "If the closet loses things or gets messy, you lose your work.",
+ "A closet with labeled shelves, where every item is also written down in a list so it can never be lost.",
+ "Copy-on-write, checksummed, log-structured filesystem (in the family of APFS / ZFS / Btrfs) with instant snapshots, transparent compression and per-file encryption keys. Block layer supports NVMe, UFS, SD and network block devices. Snapshots are what make Time Travel and instant atomic updates possible.",
+ ["objects","versions","encryption-rest","updates"]),
+ N("power","🔋","The Battery Boss","Power Management",
+ "The Battery Boss decides which parts of the computer can take a nap so the battery lasts all day.",
+ "A phone that dies at lunchtime is a phone you cannot use.",
+ "Turning off lights in rooms nobody is in.",
+ "Energy-aware scheduling, CPU/GPU frequency governors, per-app energy accounting shown to users, and a wake-lock budget that apps must request. Background work is batched into maintenance windows. Thermal management coordinates with the renderer and the model router to lower frame rate or move inference to the cloud when the device is hot.",
+ ["scheduler","router","settings"]),
+ N("boot","🌅","Waking Up","Secure Boot",
+ "Waking Up is the checklist the computer runs every time it turns on, checking that nobody swapped its Brain for a fake one.",
+ "If a bad program sneaks in before the Brain wakes up, nothing above it can be trusted.",
+ "A hall monitor checking everyone's ID badge as they come in the door in the morning.",
+ "Measured and verified boot: firmware verifies the bootloader, which verifies the kernel and system image (dm-verity-style Merkle tree), with measurements sealed into the Secure Enclave for remote attestation. A/B system slots enable seamless updates and automatic rollback if the new slot fails to boot three times.",
+ ["secure-enclave","updates","threat"]),
+ N("sandbox","📦","Bubbles","Virtualization & Sandboxing",
+ "Bubbles wrap each program in its own invisible bubble so it cannot touch anything outside unless you allow it.",
+ "Even if a game has a bug or a bad guy hides inside it, the bubble keeps the rest of the computer safe.",
+ "Hamster balls: each hamster can roll around and have fun, but it cannot get out and chew the wires.",
+ "Three isolation tiers: (1) process sandboxes with capability-only access, (2) lightweight microVMs (Firecracker/gVisor-class) for untrusted or legacy code, (3) WebAssembly components with WASI for portable plugins and AI skills. Hardware virtualization (KVM/Hypervisor.framework equivalents) backs tiers 2 and the compatibility layers.",
+ ["app-sandbox","compat","skills"]),
+ N("updates","🔄","Fresh Paint","Update Engine",
+ "Fresh Paint quietly downloads new pieces of NovaOS and swaps them in while you sleep, so the computer keeps getting better and safer.",
+ "Most break-ins happen through holes that were already fixed but never installed.",
+ "Your school repainting one classroom over the weekend so nobody has to miss a lesson.",
+ "Atomic, image-based OS updates using A/B slots and binary deltas (zstd, ~10-50 MB typical), staged during charging on Wi-Fi, activated by a fast reboot or live-swap for user-space services. Apps update independently through the Store. Security patches ship monthly with a 48-hour emergency lane; all updates are signed with a transparency log (like Sigstore / binary transparency).",
+ ["boot","storage","updates-cadence","store"]),
+ N("sensors","📡","Senses","Sensors & Input",
+ "Senses are how the computer feels the world: touch, tilt, sound, light, where you are, and where your hands are in VR.",
+ "Without senses the 3D world could not follow your head, your hand or your finger.",
+ "Your eyes, ears and skin telling your brain what is going on around you.",
+ "Unified sensor HAL (accelerometer, gyro, magnetometer, GNSS, ambient light, depth, hand/eye tracking cameras) publishing time-stamped, fused streams over IPC. Access is a permission, and apps see rate-limited or fuzzed data unless granted precise access. Also handles HID: keyboard, mouse, touch, pen, controllers.",
+ ["permissions","input","vr","maps"]),
+ N("audio-hw","🔊","Ears & Mouth","Audio Stack",
+ "Ears & Mouth let the computer listen through the microphone and talk or play music through the speakers, with almost no delay.",
+ "In a 3D room with friends, even a tiny delay in voices feels weird, like a bad phone line.",
+ "Walkie-talkies that work so fast it feels like the other person is standing next to you.",
+ "Low-latency (<10 ms round-trip) audio server in the style of PipeWire, with per-app volume, routing graphs, echo cancellation and hardware offload. Exposes a spatial audio API (HRTF, Ambisonics) used by the Playground's voice system. Microphone access lights an always-visible indicator that apps cannot hide.",
+ ["voice","permissions","media"])]));
+
+const LOCKS=F(350,N("locks","🔐","Locks & Keys","Security & Identity",
+"Locks & Keys is the part of NovaOS that knows who you are, keeps your stuff private, and makes every app ask politely before touching anything.",
+"A computer that cannot tell you from a stranger cannot keep your secrets or your money safe.",
+"Your house: one front-door key that works for you, locks on the important drawers, and a rule that visitors knock first.",
+"Zero-trust security model built on a single decentralized identity (NovaID), FIDO2 passkeys, capability-based permissions, hardware-backed key storage and end-to-end encryption by default. Every security-relevant event is written to a user-readable audit log. Threat model covers malicious apps, lost devices, network attackers and (with Family Controls) age-appropriate protections for children.",
+["engine","postoffice","piggy","robots"],[
+ N("identity","🪪","Your One Name","NovaID",
+ "Your One Name is a single account that unlocks every app, every device and your piggy bank, so you never juggle a hundred passwords.",
+ "One strong identity is safer and simpler than many weak ones scattered everywhere.",
+ "A library card that also works at the pool, the bus and the school cafeteria.",
+ "NovaID is a self-sovereign identifier: a key pair (Ed25519) whose public key hashes to a DID-style address (e.g. <code>nova:z6Mk…</code>). Private keys live in each device's Secure Enclave; devices are linked by cross-signing. Verifiable credentials (age bracket, school, bank verification) attach to it selectively, and identity addressing in Bridge Protocol routes messages straight to it. Comparable: W3C DIDs, Matrix cross-signing, Apple Passkeys sync.",
+ ["passkeys","identity-addr","wallets","recovery"],[
+  N("passkeys","🔑","Magic Keys","Passkeys / FIDO2",
+  "Magic Keys are secret keys that live inside your gadget and prove it is really you, with no password to forget or steal.",
+  "Passwords get guessed and phished every day; passkeys cannot be typed into a fake website.",
+  "A key that only works in your own front door and turns to dust if someone copies it.",
+  "WebAuthn / FIDO2 public-key credentials generated per site and per NovaID, stored in the Secure Enclave, synced across a user's devices with end-to-end encryption. Phishing-resistant because the origin is bound into the challenge. Hardware security keys (YubiKey-class) supported as a second factor and for recovery.",
+  ["secure-enclave","biometrics","browser"]),
+  N("biometrics","👆","Your Face & Finger","Biometrics",
+  "Your face or fingerprint unlocks the gadget, and the picture of your face never leaves the gadget.",
+  "It makes strong security so quick that people actually use it instead of turning it off.",
+  "A bouncer who recognizes you on sight but never takes your photo home.",
+  "Face/fingerprint templates are stored only inside the Secure Enclave and are used to release keys locally; they never leave the device and are never used as the credential itself (the passkey is). Liveness detection and a fallback PIN with exponential backoff are required. Kids' profiles can require a grown-up biometric for purchases.",
+  ["secure-enclave","approvals"]),
+  N("devices-list","📱","Your Gadgets","Device Registry",
+  "Your Gadgets is the list of every phone, laptop and headset that belongs to you, so you can spot a stranger's device and kick it out.",
+  "If a device is lost, you want to lock it from anywhere in seconds.",
+  "The list of everyone who has a key to your house.",
+  "Signed device manifest per NovaID with per-device keys, capabilities and last-seen data; new devices join via QR-code cross-signing from an existing device. Remote lock/wipe, and device revocation immediately invalidates that device's keys in Bridge Protocol routing and in wallet spending.",
+  ["identity","sync","recovery"])]),
+ N("permissions","🙋","Asking Politely","Permission System",
+ "Every app has to raise its hand and ask before using the camera, your location, your files or your money, and you can say no.",
+ "Apps should only get to touch what they truly need for the job you asked them to do.",
+ "A visitor who must knock on each door in your house instead of wandering wherever they like.",
+ "Capability-based, purpose-scoped permissions requested at time of use, with one-time / while-using / always options and automatic expiry for unused grants. Permissions are declared in the app manifest, reviewed at store submission and shown on a privacy label. AI agents inherit a subset of the user's permissions and must re-prompt for sensitive tools (payments, sending messages).",
+ ["manifest","tool-perms","app-sandbox","audit"]),
+ N("app-sandbox","🫧","Play-Pens","App Sandboxes",
+ "Each app plays inside its own play-pen and can only reach the toys you hand over the fence.",
+ "It means a bad app cannot read your messages or empty your wallet even if it wants to.",
+ "Kids in separate play-pens sharing a toy only when a grown-up passes it over.",
+ "Every app runs as a distinct principal with a private data directory, no ambient file-system or network access, and capabilities handed in through IPC. Sensitive resources are brokered by system services (file picker, share sheet, payment sheet) so the app never sees more than the chosen item. Similar to iOS/Android app sandboxes plus Fuchsia's component framework.",
+ ["sandbox","permissions","memory"]),
+ N("encryption-rest","🔒","Locked Drawers","Encryption at Rest",
+ "Everything saved on your gadget is scrambled, so if someone steals it they only get gibberish.",
+ "Losing a phone should mean losing a phone, not losing your diary and your money.",
+ "A diary written in a secret code only your key can unscramble.",
+ "Per-file AES-256-XTS / ChaCha20 keys wrapped by class keys that are released by the Secure Enclave only after unlock (Apple Data Protection model). Different key classes for always-available (alarms), after-first-unlock (mail), and unlocked-only (wallet) data. Snapshots and backups stay encrypted with user-held keys.",
+ ["storage","secure-enclave","backups"]),
+ N("encryption-transit","✉️","Sealed Envelopes","Encryption in Flight",
+ "Every message NovaOS sends over the internet is sealed in an envelope only the receiver can open.",
+ "Postcards can be read by anyone who carries them; sealed letters cannot.",
+ "Sending a letter in a locked box when only your friend has the key.",
+ "End-to-end encryption is the default transport in Bridge Protocol: Noise-protocol handshakes (X25519, ChaCha20-Poly1305) with forward secrecy and post-quantum hybrid (ML-KEM) key agreement. Group messaging uses MLS (RFC 9420). TLS 1.3 is used only at gateways to the legacy internet.",
+ ["e2e","bridge","gateway"]),
+ N("parental","🧑‍🍼","Grown-up Switches","Family Controls",
+ "Grown-up Switches let a parent choose what a kid can see, buy and download, and how long they can play.",
+ "Kids should get a safe version of a powerful computer, not a locked-down toy or the wild internet.",
+ "Training wheels you can take off one at a time as you grow.",
+ "Family groups with age-bracketed child profiles; policies for content ratings, screen time, spending limits, contact allowlists and AI kid-safe mode are enforced by system services (not by apps), signed by the guardian and auditable. Age verification uses verifiable credentials without exposing birth dates to apps.",
+ ["kidsafe","allowance","approvals","moderation-world"]),
+ N("recovery","🛟","Lost Key Helpers","Account Recovery",
+ "If you lose all your gadgets, trusted people and a secret recovery code help you get back in without letting a stranger do the same.",
+ "Strong locks are useless if losing a phone means losing yourself forever.",
+ "Leaving a spare key with grandma and a neighbor, and needing both of them to open the door.",
+ "Social recovery with threshold secret sharing (Shamir, e.g. 3-of-5 trusted contacts or devices), plus an optional printed 24-word recovery code and hardware key. Recovery has a mandatory time delay with notifications to all devices so a hijack can be cancelled. Modeled on Apple recovery contacts and smart-account social recovery.",
+ ["identity","devices-list","audit"]),
+ N("audit","📔","The Diary","Audit Log",
+ "The Diary writes down every important thing that happened: which app used the camera, who logged in, what the robot helper did.",
+ "You cannot fix or even notice a problem you cannot see.",
+ "A hall pass log that shows who left the classroom and when.",
+ "Tamper-evident, append-only log (hash-chained, similar to a local Certificate Transparency tree) of permission grants, sign-ins, payments, agent actions and data exports. Presented as a readable timeline in Settings; exportable as JSON; entries older than a user-chosen period are pruned. Agents' tool calls are logged with their inputs and outputs.",
+ ["permissions","evals","ledger-design","settings"]),
+ N("secure-enclave","🏰","The Vault Chip","Secure Enclave",
+ "The Vault Chip is a tiny separate computer inside your gadget that guards the most secret keys and never hands them out.",
+ "Even if the Brain is tricked, the vault stays shut.",
+ "A safe inside the house with its own guard who does not take orders from anyone else.",
+ "Hardware root of trust (TPM 2.0 / Secure Element / TrustZone-class) holding device keys, passkeys, biometric templates and wallet signing keys; performs attestation for boot and for banks. Keys are non-exportable; operations are rate-limited. On devices without one, a software TEE fallback is used with reduced trust level shown to services.",
+ ["boot","passkeys","wallets","biometrics"]),
+ N("threat","🛡️","The Guard Dog","Threat Detection",
+ "The Guard Dog watches for programs behaving strangely and barks (or bites) before they can do harm.",
+ "Locks stop most trouble, but you still want an alarm for the rare time something gets through.",
+ "A dog that knows the family and growls at anyone sneaking around at night.",
+ "On-device behavioral detection (anomalous permission use, exfiltration patterns, known-bad hashes via privacy-preserving set intersection), app-store scanning, and a lockdown mode that disables risky parsers. Vulnerability disclosure program with public advisories; memory-safe system code shrinks the attack surface substantially.",
+ ["memory","boot","antispam","review"])]));
+
+const TOYBOX=F(35,N("toybox","🧸","Toy Box","File System & Data",
+"The Toy Box is where all your stuff lives: drawings, photos, homework, game saves, and it is the same box on every gadget you own.",
+"Your stuff is the reason you use a computer; losing it or not finding it is the worst thing an OS can do.",
+"A toy chest that magically has the same toys inside whether you open it at home, at grandma's or at school.",
+"Object-based storage layer above the copy-on-write filesystem: every file is a content-addressed object with rich metadata, full version history, CRDT-based collaborative editing, and end-to-end encrypted sync across a user's devices with optional relay storage. Comparable: iCloud Drive + Dropbox + Git + Google Docs collaboration, unified at the OS level.",
+["engine","postoffice","apps","robots"],[
+ N("objects","🧱","Everything Is a Block","Object Store",
+ "Every drawing, song or note is a block with a name, a picture, a date and labels, so any app can pick it up and understand it.",
+ "When files all look the same to the system, search, sharing and time travel work for everything at once.",
+ "LEGO bricks: whatever set they came from, they all click together.",
+ "Content-addressed objects (BLAKE3 hashes) with a typed metadata envelope (MIME type, creator, provenance, permissions, tags) stored in an embedded database (SQLite-class) alongside chunked blobs in the CoW filesystem. Apps read and write through a typed Data API instead of raw paths, which is what enables uniform sync, versioning, search and sharing.",
+ ["storage","versions","search-index","tags","files-app"]),
+ N("versions","⏪","Time Travel","Versioning",
+ "Time Travel lets you go back to how a file looked an hour, a day or a year ago, so a mistake is never final.",
+ "Everyone accidentally deletes a paragraph or paints over a drawing; undo should work forever.",
+ "A flip-book where every page is a saved moment you can turn back to.",
+ "Filesystem snapshots plus per-object version chains (deduplicated by chunk, like Git packfiles or Dropbox rewind). Versions are browsable in the Files app with a timeline scrubber; retention is quota-aware (dense for recent, sparse for old). Apps can label named versions ('Handed in').",
+ ["objects","storage","trash","backups"]),
+ N("sync","☁️","Same Toys Everywhere","Sync Engine",
+ "Sync copies your stuff between your phone, laptop and headset so it is always up to date, even if you were offline for a while.",
+ "You should never have to email a file to yourself again.",
+ "Two whiteboards in two rooms that magically show the same drawing.",
+ "Device-to-device sync over Bridge Protocol using content hashes and a Merkle-DAG of objects; conflicts on plain files create both versions, and structured data uses CRDTs. Encrypted blobs can be parked on relay storage (user-chosen provider or self-hosted) so devices need not be online simultaneously. Selective sync per folder and per device class.",
+ ["bridge","offline","crdt","devices-list"]),
+ N("sharing","🤝","Sharing Toys","Sharing & Links",
+ "Sharing lets you hand a friend one drawing, or a whole folder, and choose whether they can look or also change it.",
+ "Working together should not mean giving someone your whole toy box.",
+ "Lending one toy from your chest without giving away the key to your room.",
+ "Capability links: a share is a signed grant (object id + rights + expiry + optional passphrase) that the recipient's NovaID can redeem; revocation is immediate because relays check grant validity. Live co-editing rides on CRDTs; comments and presence are built in. Public links produce read-only web views through the gateway.",
+ ["objects","crdt","messages","identity"]),
+ N("search-index","🔍","The Finder","Search Index",
+ "The Finder can find anything you own by name, by words inside it, by what is in a photo, or by asking a question in plain words.",
+ "A toy box you cannot find things in is just a pile.",
+ "A librarian who has read every book you own and remembers which one had the dinosaur.",
+ "On-device full-text and vector index (SQLite FTS5 + embedding vectors from the on-device model) over object metadata and extracted content (OCR, speech-to-text, image captions). Queries never leave the device; the AI assistant uses this index as its retrieval source. Index respects per-profile boundaries and hidden folders.",
+ ["objects","ondevice","context","assistant"]),
+ N("tags","🏷️","Sticky Labels","Tags & Metadata",
+ "Sticky Labels are little colored notes you (or the robot) stick on files, like 'homework' or 'birthday', so one file can live in many places at once.",
+ "Real life does not fit neatly into single folders.",
+ "Stickers on your notebooks so you can find all the math ones fast.",
+ "Free-form tags and structured metadata (EXIF, schema.org-style types, provenance including C2PA content credentials for AI-generated media) stored in the object envelope and indexed. Smart folders are saved queries. Auto-tagging by the on-device model is suggested, not applied silently.",
+ ["objects","search-index","photos"]),
+ N("backups","🗄️","The Spare Box","Backups",
+ "The Spare Box is a full copy of everything, kept somewhere else, so a broken or lost gadget never means lost stuff.",
+ "Sync is not a backup: if you delete something everywhere by mistake, you need the spare.",
+ "A photocopy of your homework kept at grandma's house.",
+ "Encrypted, incremental, snapshot-based backups to a user-chosen destination (external drive, another owned device, or a provider) with client-held keys; verified by periodic restore tests. Restore onto a new device is streaming and prioritized (recent, frequently used first). Follows the 3-2-1 rule guidance in the setup wizard.",
+ ["versions","encryption-rest","storage"]),
+ N("trash","🗑️","Oops Bin","Trash with Undo",
+ "The Oops Bin keeps anything you delete for a while, so you can say 'oops' and get it back.",
+ "Deleting should feel safe, not scary.",
+ "A wastepaper basket that the janitor only empties after 30 days.",
+ "Soft delete flags the object and hides it from indexes; permanent purge after 30 days (configurable) or when quota pressure demands, with a per-item undo toast and a system-wide undo stack. Deleted shared objects notify collaborators and give them a rescue window.",
+ ["versions","files-app"]),
+ N("formats","📄","Shapes of Things","File Formats",
+ "Shapes of Things are the agreed ways files are written down so any app, and other computers, can read them.",
+ "If NovaOS invented secret formats, your drawings would be trapped forever.",
+ "Everyone agreeing that a stop sign is red and eight-sided so anybody can recognize it.",
+ "Open formats first: PNG/JPEG XL/AVIF, Opus/FLAC, AV1/H.265, PDF, OpenDocument, glTF/USD for 3D, Markdown/JSON/SQLite for data. System-wide codec framework with sandboxed parsers (the most-attacked code in any OS). Import/export to proprietary formats happens through converters, never lock-in.",
+ ["objects","open-standards","assets"]),
+ N("crdt","🧮","Everyone Draws at Once","CRDTs",
+ "Everyone Draws at Once is a clever trick that lets several people edit the same note or picture at the same time without messing each other up.",
+ "Working together is the most fun and the most useful thing a computer can do.",
+ "Two kids writing on the same whiteboard, and the whiteboard magically keeps both of their words in the right places.",
+ "Conflict-free replicated data types (Yjs / Automerge-style) as the OS's standard structured-document model: text, rich text, lists, maps and a 3D scene graph type. Works offline and merges deterministically over Bridge Protocol; used by Notes, Creative Studio, the 3D world's shared rooms and the collaborative IDE.",
+ ["sync","notes","studio","rooms"]),
+ N("quotas","📏","How Much Fits","Storage Quotas",
+ "How Much Fits shows how much space you have left and which apps are hogging it, with easy buttons to free some up.",
+ "A full gadget stops taking photos at the worst moment.",
+ "A ruler on the side of the toy box showing how full it is.",
+ "Per-app and per-profile accounting from the object store; purgeable caches are evicted automatically under pressure; large-object suggestions and 'optimize storage' (keep originals in relay storage, thumbnails locally). Family plans pool relay quota.",
+ ["storage","settings"])]));
+
+const POST=F(190,N("postoffice","📮","Post Office","Networking & Bridge Protocol",
+"The Post Office moves messages, files and game moves between gadgets, using a brand-new set of delivery rules called Bridge Protocol.",
+"A modern OS is mostly about talking to other computers; if that is slow, leaky or spammy, everything built on top suffers.",
+"A post office that delivers letters to people by name (not by house number), always in sealed envelopes, and even holds your mail while you are on holiday.",
+"Bridge Protocol is an identity-addressed, encrypted-by-default overlay network: packets are routed to NovaIDs rather than IP addresses, using direct peer-to-peer paths when possible and store-and-forward relays otherwise. It runs over UDP/QUIC on today's internet and interoperates with TCP/IP/HTTP through gateways. Comparable building blocks: QUIC, WireGuard, libp2p, Matrix, Nostr, Tailscale/Yggdrasil-style identity routing, Signal's sealed sender.",
+["locks","toybox","playground","piggy"],[
+ N("bridge","🌉","Bridge Protocol","The New Internet Protocol",
+ "Bridge Protocol is the set of rules every NovaOS gadget uses to send anything to anyone, safely and fast, even when the internet is wobbly.",
+ "Today's internet was designed for computers in fixed places; people move, carry many gadgets and want privacy.",
+ "New rules for a post office where every letter is addressed to a person, sealed shut, and delivered by the fastest path available.",
+ "Layering: (L1) any IP transport (QUIC/UDP, with TCP fallback); (L2) Bridge Datagram: identity-addressed, Noise-encrypted packets with a 64-bit route hint; (L3) Streams and Channels (reliable ordered, reliable unordered, unreliable realtime); (L4) Sync and Messaging primitives (CRDT deltas, MLS groups). Public specification, permissive license, reference implementation in Rust with bindings.",
+ ["identity-addr","packets","e2e","p2p","relays","realtime","gateway"],[
+  N("identity-addr","🏷️","Letters to People, Not Places","Identity Addressing",
+  "You send a message to your friend's name, not to the number of the Wi-Fi they happen to be on right now.",
+  "People move between home, school and the car; their name should stay the same even when their location changes.",
+  "Writing 'To: Maya' on a letter and having it find her whether she is at home or at camp.",
+  "Addresses are NovaID public keys (or short, human-friendly names resolved through Naming). The routing layer maps identity to current locators (IP:port sets, relay ids) through signed, expiring locator records published by each device. Multi-device delivery is native: a message to a person fans out to all their devices. Similar ideas: Host Identity Protocol, Yggdrasil, libp2p PeerIDs.",
+  ["identity","naming","packets","devices-list"]),
+  N("packets","📦","Parcels","Packet Format",
+  "A parcel is one small chunk of a message with a sealed label saying who it is from and who it is for.",
+  "Small parcels can take different roads and get put back together, which makes delivery fast and tough.",
+  "Shipping a big LEGO set as several small boxes that all arrive and click together.",
+  "Fixed 40-byte header: version, type, 128-bit destination identity prefix, 64-bit route hint, 32-bit stream id, 48-bit sequence, flags; payload up to 1200 bytes (MTU-safe) encrypted with ChaCha20-Poly1305; sender identity is inside the encrypted payload (sealed sender) so intermediaries learn only the destination. Encoded as CBOR for extensions.",
+  ["e2e","congestion","realtime"]),
+  N("e2e","🔏","Sealed by Default","Encryption",
+  "Every parcel is sealed so only the person it is for can open it; there is no unsealed mode.",
+  "If privacy is optional, most people never turn it on.",
+  "Every envelope in the whole post office is glued shut. No postcards.",
+  "Mandatory end-to-end encryption: Noise IK/XX handshakes with X25519 + ML-KEM hybrid, ChaCha20-Poly1305 AEAD, key ratcheting for forward secrecy, and MLS for groups up to tens of thousands. Relays see ciphertext and destination only. Metadata minimization with padded packet sizes and optional cover traffic.",
+  ["encryption-transit","relays","messages"]),
+  N("p2p","🤼","Direct Delivery","Peer-to-Peer",
+  "When two gadgets can reach each other directly, they talk straight to each other with nobody in the middle.",
+  "Direct is faster, cheaper and more private than bouncing through a company's servers.",
+  "Handing a note straight to your friend instead of mailing it across town.",
+  "NAT traversal via ICE-style candidate gathering (STUN, hole punching, IPv6 preference, local-network discovery over mDNS), with connection migration when networks change (QUIC-style). Local mesh over Wi-Fi Direct / Bluetooth LE for nearby devices with no internet at all.",
+  ["relays","wifi","realtime"]),
+  N("relays","🏤","Helper Post Offices","Relays",
+  "When gadgets cannot reach each other directly, or one is asleep, a helper post office holds and forwards the sealed parcels.",
+  "Phones are often off or behind tricky networks, and the mail still has to get through.",
+  "Leaving a package with a neighbor when your friend is not home.",
+  "Relays are untrusted store-and-forward nodes anyone can run (an open federation like Matrix homeservers or Nostr relays); users choose several. They store encrypted blobs with TTLs, hold mailboxes keyed by identity, and are paid for with small Ledger micro-payments or provided by the device maker. No relay sees plaintext or sender identity.",
+  ["p2p","offline","e2e","antispam"]),
+  N("offline","📬","Mailbox While You're Away","Offline-First Sync",
+  "Everything you do offline is saved and delivered the moment you reconnect, and things others sent you are waiting in your mailbox.",
+  "Being on a plane, in a tunnel or at a cabin should never lose your work.",
+  "Mail piling up neatly in your mailbox while you are on holiday.",
+  "Local-first architecture: apps write to local storage, and the sync engine queues CRDT deltas and messages with idempotent ids; relays hold encrypted mailboxes. Delivery receipts are end-to-end. Apps are required to work fully offline to pass store review for core categories.",
+  ["sync","relays","crdt"]),
+  N("realtime","🏎️","The Fast Lane","Low-Latency Channel",
+  "The Fast Lane is a special road for game moves and voices where being fast matters more than being perfect.",
+  "In a 3D world with friends, a late move is worse than a lost one.",
+  "Shouting across the playground instead of writing a letter: quick, even if a word is lost.",
+  "Unreliable, unordered datagram channel with congestion control tuned for low delay (BBR-style), FEC for loss recovery, priority tagging for DSCP where networks honor it, and jitter buffers for audio. Target: <30 ms added latency on a decent connection. Comparable: WebRTC data channels, QUIC DATAGRAM (RFC 9221), game netcode UDP stacks.",
+  ["netcode","voice","congestion","p2p"]),
+  N("naming","📖","The Phone Book","Naming & Discovery",
+  "The Phone Book turns easy names like 'maya' or 'room:artclub' into the secret key addresses the network really uses.",
+  "Nobody can remember a long random key; names make sharing easy.",
+  "A class list with everyone's name next to their locker number.",
+  "Names are verifiable records signed by their owners and published to a transparency log (like Certificate Transparency) so nobody can secretly swap who a name points to. Human-friendly handles are scoped (e.g. <code>maya@school.example</code>) and also resolvable from the legacy DNS via a bridge record. Local discovery uses mDNS; contacts are pinned by key after first contact (TOFU + verification).",
+  ["identity-addr","gateway","messages","open-standards"]),
+  N("antispam","🚫","No Junk Mail","Abuse Resistance",
+  "No Junk Mail makes it hard and expensive for strangers to flood you with junk, while friends always get through.",
+  "A network anyone can use is a network spammers will try to abuse.",
+  "A mailbox that only opens for people you know, unless a stranger pays a small fee or gets vouched for.",
+  "Introduction tokens: strangers need a token (from your public profile, a mutual contact, or a small refundable Ledger deposit) to get a first message through; contacts are unlimited. Relays rate-limit per identity, proof-of-work fallback for anonymous cases, and abuse reports feed a shared, privacy-preserving reputation signal. Modeled on hashcash, Signal's sealed-sender rate limits and email's SPF/DKIM lessons.",
+  ["relays","fraud","moderation","threat"]),
+  N("gateway","🚪","Door to the Old Internet","Gateways",
+  "Doors let NovaOS talk to today's websites, email and apps, so nobody has to wait for the whole world to switch.",
+  "A new network is useless if you cannot reach your old friends and favorite sites.",
+  "A translator standing at the border between two countries who speak different languages.",
+  "Gateways translate Bridge streams to HTTP/3, TLS, SMTP, XMPP/Matrix and SIP; the browser and mail apps use them transparently. Inbound: public web views of shared objects and email addresses mapped to NovaIDs. Naming bridges via DNS TXT records. Roadmap: publish Bridge as an IETF draft and ship a WebTransport polyfill so browsers can join.",
+  ["web-compat","browser","mail","naming"]),
+  N("congestion","🚦","Traffic Lights","Flow Control",
+  "Traffic Lights stop gadgets from sending too much at once so the network does not jam like a clogged road.",
+  "Everyone sharing the road fairly is what makes the internet work at all.",
+  "Traffic lights at a busy crossing letting each street take turns.",
+  "Per-path congestion control (BBRv3 default, CUBIC fallback) with explicit per-stream priorities so realtime and interactive traffic starve bulk sync, not the other way round. Connection-level flow control windows; ECN marking honored where available.",
+  ["packets","realtime","sync"])]),
+ N("wifi","📶","Invisible Wires","Wi-Fi, Cellular & Bluetooth",
+ "Invisible Wires are the radios that connect your gadget to the world without any cables.",
+ "No radio, no network, no fun.",
+ "Walkie-talkies, but they also carry pictures and videos.",
+ "Radio stack supporting Wi-Fi 6E/7, 5G/LTE modems, Bluetooth LE/Audio, Thread and UWB with seamless roaming and multipath (Wi-Fi plus cellular simultaneously, MPQUIC-style). Randomized MAC addresses per network by default for privacy.",
+ ["drivers","p2p","platforms"]),
+ N("firewall","🧱","The Fence","Firewall",
+ "The Fence decides which apps may talk to the network at all, and to whom.",
+ "An app that draws pictures has no business phoning home to a stranger.",
+ "A fence around the yard with one gate the grown-ups control.",
+ "Default-deny outbound per app (network access is a permission), with per-app domain and identity allowlists visible in Settings, DNS-over-Bridge or DoH by default, and inbound closed except for explicitly published services. Tracker blocking lists applied at the gateway layer.",
+ ["permissions","gateway","settings"]),
+ N("vpn","🕳️","Secret Tunnels","Private Networks",
+ "Secret Tunnels connect your gadgets, or your whole family, into one private network no matter where they are.",
+ "Sometimes you want your home printer, game server or school lab reachable only by your own people.",
+ "A secret tunnel between your treehouse and your friend's.",
+ "Identity-based overlay networks (Tailscale/WireGuard-style) fall out of Bridge Protocol nearly for free: a 'network' is a signed membership list of NovaIDs; legacy IP devices join through a gateway node. Third-party VPN apps use a standard tunnel API.",
+ ["bridge","identity","platforms"]),
+ N("web-compat","🌐","Reading Old Websites","HTTP / TLS Stack",
+ "NovaOS still speaks the language of today's websites, so every site you love works on day one.",
+ "You cannot ask the whole world to rebuild their websites for a new OS.",
+ "Knowing both the new secret code and the plain old alphabet.",
+ "Full HTTP/1.1, HTTP/2, HTTP/3 (QUIC), TLS 1.3, WebSocket and WebTransport stack shared by the browser and all apps via a system networking API (URL loading, caching, cookies jar per app), with certificate transparency enforcement. Based on proven open-source stacks (e.g. Chromium's or a Rust stack like hyper/quinn/rustls).",
+ ["gateway","browser","compat"])]));
+
+const PIGGY=F(140,N("piggy","🐷","Piggy Bank","Banking & Ledger Protocol",
+"The Piggy Bank is money built right into NovaOS: your own wallet, instant payments to friends and shops, allowances, receipts, and a grown-up who can say yes or no. Its rules are called Ledger Protocol.",
+"Money is part of life, and today it is spread across confusing apps, cards and fees; it should be as simple and safe as sending a message.",
+"A piggy bank that can zip coins to a friend's piggy bank instantly, prints a receipt every time, and asks a parent before big spends.",
+"Ledger Protocol is an open payments and account protocol: identity-bound wallets, signed append-only ledgers, instant push payments, programmable limits and approvals, mandates for subscriptions, and connectors to regulated banks and card networks. It is a protocol layer (like ISO 20022 messaging + Open Banking APIs + UPI/Pix-style instant rails), not a new currency; balances are held at licensed institutions or in tokenized form where law allows.",
+["locks","postoffice","apps","rulebook"],[
+ N("ledger","📒","Ledger Protocol","The Banking Protocol",
+ "Ledger Protocol is the rulebook that every wallet, shop and bank follows so money moves instantly and everyone's notebooks agree.",
+ "If every bank and app spoke one clear language, money would move as easily as a text message.",
+ "The rules of a board game: everyone knows how money moves, so there are no arguments.",
+ "Messages are signed CBOR objects (Payment Instruction, Mandate, Receipt, Dispute, Attestation) carried over Bridge Protocol streams. Semantics map onto ISO 20022 (pacs/pain/camt) so banks can translate without new core systems. Settlement happens on participating institutions' ledgers with instant-rail connectors (FedNow, SEPA Instant, UPI, Pix); the protocol itself is currency-agnostic. Open spec, permissive license, conformance test suite.",
+ ["wallets","transfers","receipts","bank-bridge","ledger-design"],[
+  N("wallets","👛","Your Pocket","Wallets",
+  "Your Pocket is where your money lives in NovaOS, tied to Your One Name, so it is yours on every gadget.",
+  "Money should belong to a person, not to one phone or one app.",
+  "A pocket that is on every pair of pants you own, with the same coins in it.",
+  "A wallet is a set of accounts (bank-held balances, cards, stored value, loyalty points) bound to a NovaID with spending keys in the Secure Enclave. Every device holds a sub-key with its own limits; losing a device revokes that sub-key. Multi-signature policies express family rules (child key + guardian key above a threshold).",
+  ["identity","secure-enclave","allowance","wallet-app"]),
+  N("transfers","⚡","Zip Money","Instant Transfers",
+  "Zip Money sends money to a friend as fast as a text, and both of you see it right away.",
+  "Waiting three days for money to move is a leftover from the paper age.",
+  "Passing a coin to a friend across the table.",
+  "Push payments addressed to a NovaID or a scannable QR/NFC request; the payer signs a Payment Instruction, the payer's institution settles over an instant rail, and both parties receive a signed Receipt within seconds. Request-to-pay and split-bill primitives are included. Comparable: UPI, Pix, FedNow, Zelle, but interoperable and identity-addressed.",
+  ["wallets","receipts","messages","bank-bridge"]),
+  N("allowance","🍬","Allowance & Limits","Spending Rules",
+  "Allowance drops pocket money into a kid's wallet every week, and limits stop spending going past what a grown-up allowed.",
+  "Learning about money is easier with real money and gentle guardrails.",
+  "Getting five coins every Saturday and knowing the toy shop only lets you spend two a day.",
+  "Programmable spending policies: recurring credits, per-transaction and per-period caps, category and merchant allowlists, time windows, and savings goals with locked sub-balances. Policies are signed by a guardian, enforced by the wallet's institution at authorization time and mirrored locally for instant feedback.",
+  ["parental","approvals","wallets"]),
+  N("receipts","🧾","Receipts","Signed Receipts",
+  "Every payment prints a digital receipt that says who, what, when and how much, and it is saved in your Toy Box forever.",
+  "Receipts settle arguments and make returns easy.",
+  "The little paper slip from the shop, except it never gets lost.",
+  "Receipts are signed by both institutions and the merchant, contain line items in a structured schema (compatible with the digital receipt standard efforts and ISO 20022 camt), and are stored as objects with tags, searchable and exportable to accounting software. Merchants can attach warranty and return windows.",
+  ["objects","disputes","merchants"]),
+  N("approvals","🙋‍♂️","Ask a Grown-up","Approvals",
+  "When a payment is bigger than allowed or looks unusual, a grown-up gets a ping and taps Yes or No.",
+  "Kids and even grown-ups appreciate a second look before big money moves.",
+  "Asking a parent before buying something at the fair.",
+  "Approval flows are multi-signature: a policy names approvers and thresholds; a pending instruction is delivered over Bridge to approvers' devices with full context and biometric confirmation. Also used for adults' large transfers, new payees and business accounts (maker-checker). Approvals are logged to the audit log.",
+  ["biometrics","allowance","messages","audit"]),
+  N("merchants","🏪","Paying Shops","Merchant Payments",
+  "Paying Shops lets you tap your phone or click in an app to pay a store, with the store never seeing your card number.",
+  "Shops should get paid quickly and cheaply, and you should not have to trust them with your secrets.",
+  "Paying with a token at the arcade: the machine gets a token, not your whole piggy bank.",
+  "Payment sheet API for apps and web (W3C Payment Request compatible), NFC/QR for in-person, tokenized credentials per merchant, and settlement over instant rails at a capped protocol fee far below card interchange. Merchant identity is a verified credential displayed in the sheet; refunds are protocol messages tied to the original receipt.",
+  ["receipts","store","disputes","kyc"]),
+  N("subs","📅","Every-Month Money","Subscriptions",
+  "Every-Month Money lets you agree to pay a bit each month for a game or a show, shows you the whole list, and lets you stop with one tap.",
+  "People forget subscriptions and lose money; the OS should keep the list, not the shops.",
+  "A magazine that arrives every month until you say stop.",
+  "Mandates: signed, revocable authorizations with amount ceilings, cadence and expiry, stored in the wallet; the merchant pulls against the mandate and the wallet verifies each pull. A single Subscriptions screen lists every mandate across every app with cancel/pause. Comparable: SEPA mandates, Open Banking VRP.",
+  ["wallets","wallet-app","approvals"]),
+  N("fraud","🕵️","Fraud Watch","Fraud Protection",
+  "Fraud Watch spots strange payments, like a huge one in the middle of the night to someone new, and pauses them.",
+  "Bad guys try to trick people out of money every day.",
+  "A shopkeeper who knows you and asks 'are you sure?' when you try to buy 500 candy bars.",
+  "Risk scoring on the device (behavioral, velocity, payee novelty) and at the institution, with step-up authentication or holds for outliers; payee verification (confirmation of payee name) before first payment; scam-warning interstitials; shared fraud signals across institutions in privacy-preserving form. Ties into Abuse Resistance so spam and scams share reputation.",
+  ["threat","antispam","approvals","disputes"]),
+  N("disputes","⚖️","That's Not Fair!","Disputes & Refunds",
+  "If a toy never arrives or a charge is wrong, you press 'That's not fair', and a clear process gets your money back.",
+  "Trusting a payment system means knowing mistakes can be fixed.",
+  "Telling the teacher when a trade went wrong and having a fair way to sort it out.",
+  "Structured dispute messages referencing the receipt, with evidence attachments; merchant response windows; automatic refunds for undelivered digital goods; escalation to the institution's regulated chargeback-equivalent process. Outcome codes are standardized; repeat offenders lose merchant credential standing.",
+  ["receipts","merchants","fraud"]),
+  N("bank-bridge","🏦","Real Banks & Cards","Bank Connectors",
+  "Real Banks & Cards connect your NovaOS wallet to the bank your family already uses and to normal cards.",
+  "Nobody should have to switch banks to use a new phone.",
+  "A bridge from your piggy bank to the big bank downtown.",
+  "Connectors implement Open Banking / PSD2-style APIs, ISO 20022 messaging, instant rails (FedNow, RTP, SEPA Inst, UPI, Pix, Faster Payments) and card network tokenization (EMVCo). Institutions run a Ledger Protocol adapter; users link accounts with bank-side consent. NovaOS itself is not a bank; balances stay at regulated institutions.",
+  ["ledger","kyc","transfers","merchants"]),
+  N("kyc","🪪","Proving Who You Are","KYC / AML",
+  "Before a bank lets you hold money, it has to check you are a real person, and it keeps an eye out for money from bad guys.",
+  "The law requires it, and it stops criminals from using the system to hide money.",
+  "Showing your school ID before joining a club, and the club keeping a fair list of who is in.",
+  "Know-Your-Customer verification is performed by the licensed institution; the result is issued as a verifiable credential to the NovaID (age bracket, verified-person, jurisdiction) that apps can check without seeing documents. Anti-Money-Laundering monitoring and reporting (suspicious activity, thresholds, sanctions screening) happen at the institution using the ledger's structured data; travel-rule fields are included in instructions where required.",
+  ["identity","bank-bridge","kids-law","merchants"]),
+  N("ledger-design","⛓️","The Unbreakable Notebook","Append-Only Signed Ledger",
+  "The notebook where money moves are written can only be added to, never erased, and every line is signed, so cheating shows up instantly.",
+  "If the notebook could be secretly edited, nobody could trust it.",
+  "Writing in permanent marker in a notebook where every page is numbered and stapled.",
+  "Each account's ledger is an append-only, hash-chained log of signed entries (Ed25519 signatures, BLAKE3 chaining) kept by the institution and mirrored to the owner's devices; periodic checkpoints are published to a transparency log so institutions cannot rewrite history. Double-entry semantics; reconciliation between institutions is a deterministic replay. Not a blockchain: no global consensus or mining, just verifiable per-account logs.",
+  ["audit","ledger","transparency"]),
+  N("currencies","💱","Different Coins","Multi-Currency",
+  "Different Coins lets your wallet hold dollars, euros or yen and shows the swap price clearly before you pay abroad.",
+  "Families travel and shop across borders; hidden exchange fees are a trick.",
+  "Trading playground marbles for stickers at a rate everyone can see.",
+  "Instructions carry ISO 4217 currency codes and explicit FX quotes with all-in cost disclosure; cross-currency settlement via institutions' correspondent or instant-rail links; stablecoin or CBDC rails can plug in as connectors where regulated. Rounding and minor-unit rules follow ISO 20022.",
+  ["bank-bridge","transfers"])]),
+ N("tokens-gifts","🎁","Gift Cards & Points","Stored Value & Loyalty",
+ "Gift Cards & Points live in the same wallet, so a birthday gift card or a game's coins never get lost in a drawer.",
+ "Value is value; kids should see all of it in one place.",
+ "Keeping your arcade tokens in the same pocket as your coins.",
+ "Stored-value instruments and loyalty points as wallet sub-accounts with issuer signatures, spend rules and expiry; in-game currencies through the Store must be transparent (real-money equivalent shown) and are subject to kids' spending policies.",
+ ["wallets","store","games","allowance"])]));
+
+const PLAY=F(280,N("playground","🎠","Playground","3D Multiplayer World & Graphics Engine",
+"The Playground is the NovaOS desktop: instead of a flat screen full of icons, it is a 3D place with rooms where you, your friends and your apps hang out.",
+"Computers got flat because screens were flat; now we have 3D chips, headsets and friends online, so the desktop can be a place.",
+"Your bedroom, the school hall and the park, all inside the computer, where your friends can walk in and play.",
+"The system shell is a real-time 3D engine (Vulkan renderer, ECS scene graph, physics, spatial audio) hosting apps as 2D panels or 3D objects, with multiplayer rooms synchronized by authoritative servers or peer hosts over Bridge Protocol's realtime channel. It degrades gracefully to a flat 2D shell on low-end hardware or by user choice. Comparable tech: Godot/Bevy/Unreal engines, OpenXR, WebRTC-style netcode, Roblox/Fortnite social spaces, visionOS Shared Space.",
+["engine","postoffice","robots","apps"],[
+ N("world","🌍","The Room Is Your Desktop","3D Shell",
+ "Your desktop is a room: apps are things on your desk, your files are on shelves, and a door leads to friends' rooms.",
+ "A place is easier to remember and explore than a grid of tiny pictures.",
+ "Instead of a filing cabinet, your bedroom, where you know exactly where everything is.",
+ "The shell is an ECS-based scene (like Bevy) where windows are textured quads in space, files are spatial objects bound to the object store, and system UI is diegetic. Persistent layouts per room; spatial anchoring for AR. Apps opt into 3D via a scene API or run unmodified as 2D panels.",
+ ["rooms","renderer","files-app","flat"]),
+ N("rooms","🚪","Rooms & Portals","Spaces",
+ "Rooms are places you build and decorate; portals are doors between them, including to your friends' rooms.",
+ "Having your own space, and shared spaces, is how people naturally organize life.",
+ "Your bedroom, the classroom and the clubhouse, connected by hallways.",
+ "A room is a CRDT scene document (objects, transforms, permissions, owner NovaID) synced to members; portals are typed links. Rooms can be private, invite-only or public, with per-object permissions and a capacity limit per host tier. Room templates ship with the OS; creators publish rooms through the Store.",
+ ["crdt","authority","sharing","moderation-world"]),
+ N("avatars","🧍","Your Puppet","Avatars",
+ "Your avatar is the you inside the Playground: you pick how it looks, and it copies your movements and voice.",
+ "Seeing your friends as characters makes talking online feel like being together.",
+ "A puppet that moves when you move.",
+ "Avatars follow a documented open rig (VRM-compatible glTF), with body/hand/face tracking from headset sensors or webcam, IK for controllers, and lip sync from voice. Identity-bound so impersonation is detectable; kids' avatars are restricted to age-appropriate items. Third-party avatar items go through Store review.",
+ ["identity","sensors","voice","store"]),
+ N("physics","🎳","Bumping & Bouncing","Physics",
+ "Physics makes things in the Playground fall, roll, bump and bounce like real toys.",
+ "A world where things behave like real life is easier to understand and more fun.",
+ "Dropping a ball and watching it bounce.",
+ "Deterministic rigid-body physics (Jolt / Rapier-class) with fixed-step simulation so clients and servers agree; soft bodies and cloth as optional; collision layers per room policy; physics runs on a worker with jobs scheduled by the kernel's QoS classes.",
+ ["renderer","authority","prediction"]),
+ N("renderer","🖌️","Painting 60 Times a Second","Renderer",
+ "The renderer paints the whole 3D world many times a second so it looks smooth when you move.",
+ "Choppy pictures make people feel sick in VR and frustrated everywhere else.",
+ "A flip-book so fast it looks like a movie.",
+ "Vulkan-based forward+/clustered renderer with a frame graph, dynamic resolution, variable-rate shading, foveated rendering on eye-tracked headsets, and a strict frame budget (11 ms at 90 Hz) enforced by the compositor; falls back to a simpler path on integrated GPUs. Shared with apps through the scene API so the OS composites everything in one pass.",
+ ["gpu","shaders","assets","vr","scheduler"],[
+  N("shaders","✨","Light Tricks","Shaders & Materials",
+  "Light Tricks are tiny programs that make things look shiny, glowing, wooden or wet.",
+  "The right look makes the world feel real or magical.",
+  "Coloring a drawing to make the sun look bright and the water look wavy.",
+  "Physically based materials (glTF PBR + extensions), a node-based material editor in Creative Studio, shaders compiled to SPIR-V and cached; a curated shader permission tier prevents third-party shaders from freezing the compositor.",
+  ["renderer","studio","assets"]),
+  N("assets","🧊","Building Blocks","Asset Pipeline",
+  "Building Blocks are the 3D shapes, pictures and sounds that everything in the Playground is made from.",
+  "Shared building blocks mean creators do not start from zero, and everything loads fast.",
+  "A box of LEGO pieces everyone can use in their own builds.",
+  "glTF 2.0 and OpenUSD as interchange, compressed with Draco/meshopt and KTX2/Basis textures; streaming LODs from the object store; a shared asset library with licenses and provenance metadata; on-device model can generate variants under Creative Studio's control.",
+  ["formats","objects","studio","shaders"])]),
+ N("netcode","📡","Everyone Sees the Same Thing","Multiplayer Netcode",
+ "Netcode keeps every player's view of the room in sync, so when you throw a ball, your friend sees it fly.",
+ "Multiplayer is only fun if everyone agrees on what just happened.",
+ "A referee calling out what happened so all the players hear the same story.",
+ "Snapshot-interpolation and state-synchronization model over the Bridge realtime channel: authoritative simulation, client-side prediction with reconciliation, lag compensation, interest management, and delta-compressed state at 20-60 Hz. A standard netcode library is part of the SDK so every app inherits it.",
+ ["realtime","authority","prediction","interest"],[
+  N("authority","👑","The Referee","Authoritative Servers",
+  "The Referee is the one computer that decides what really happened in a room, so no one can cheat by changing their own copy.",
+  "Without a referee, someone could claim they scored when they did not.",
+  "The teacher deciding who touched the ball first.",
+  "Each room has an authority: a hosted server (room-host service), or a peer chosen by consensus for small private rooms, with host migration on disconnect. Servers validate inputs against physics and game rules; results are signed so disputes can be audited. Hosting is paid via Ledger micro-payments or the family's plan.",
+  ["netcode","physics","rooms"]),
+  N("prediction","🔮","Guessing Ahead","Client Prediction",
+  "Your gadget guesses what will happen next so your own moves feel instant, then fixes small mistakes when the Referee's answer arrives.",
+  "Waiting for the referee before every step would feel laggy.",
+  "Running to catch a ball before you see exactly where it will land.",
+  "Clients simulate their own inputs immediately, keep a history buffer and replay from the last acknowledged server state on mismatch (reconciliation); remote entities are interpolated with a small buffer; server rewinds for lag compensation on hits. Standard in competitive netcode (Source, Overwatch GDC talks).",
+  ["netcode","authority","physics"]),
+  N("interest","👀","Only What's Near","Interest Management",
+  "Your gadget only gets updates about things near you in the room, so big rooms with lots of people still run smoothly.",
+  "Sending everything to everyone would clog the network.",
+  "Only hearing the conversations at your own lunch table.",
+  "Spatial partitioning (grid/octree) with per-client relevance sets and priority accumulators; update rates fall off with distance; server-side culling of occluded or muted entities also protects privacy (you cannot 'see' through walls in data you never receive).",
+  ["netcode","voice","rooms"])]),
+ N("voice","🎤","Talking Nearby","Voice & Spatial Audio",
+ "In the Playground, you hear friends from where they are standing: closer is louder, left is left.",
+ "Natural sound makes a group of avatars feel like a real room of people.",
+ "Hearing a friend call from across the playground and knowing which way to look.",
+ "Opus at 48 kHz over the realtime channel, end-to-end encrypted per room via MLS; HRTF spatialization and room acoustics in the audio server; server-side or SFU-style forwarding for large rooms; push-to-talk, proximity chat and moderation controls (mute, distance limits, voice reports).",
+ ["audio-hw","realtime","interest","moderation-world"]),
+ N("vr","🥽","Step Inside","VR / AR Mode",
+ "With a headset, you can step inside the Playground; with a phone or glasses, the Playground can appear on your real table.",
+ "3D belongs in 3D; a headset is the most natural way to be in a room with friends.",
+ "Putting on goggles and finding yourself inside your drawing.",
+ "OpenXR runtime built into the OS; 6-DoF tracking, hand and eye tracking, passthrough AR with scene understanding (planes, meshes, anchors), comfort settings (vignette, teleport, snap turn), and a strict 90/120 Hz frame contract enforced by the compositor. Same rooms and apps as flat mode.",
+ ["renderer","sensors","input","a11y","vr-headset"]),
+ N("flat","🖥️","Flat Mode","2D Fallback",
+ "Flat Mode is a normal-looking desktop with windows and icons, for simple gadgets, tired eyes or people who just prefer it.",
+ "Not everyone has a fast chip or wants 3D all day; the OS must be great either way.",
+ "Reading the book instead of watching the movie: same story, different style.",
+ "The same shell scene renders as a 2D window manager with a compositor (Wayland-style protocol for apps), keyboard-first navigation, and identical file/app semantics. Automatic on low-end hardware, cars, watches and when accessibility settings request it.",
+ ["world","a11y","desktop","tv"]),
+ N("a11y","♿","Everyone Can Play","Accessibility",
+ "Everyone Can Play means the Playground works if you cannot see well, hear well, or move easily: the computer describes, captions, and listens.",
+ "A world only some people can use is not a good world.",
+ "A playground with ramps, braille signs and a friend who describes what is happening.",
+ "Accessibility tree exposed for 2D and 3D content (spatial semantics: what is near, what is interactable), screen reader with spatial audio cues, live captions for all voice, one-handed and switch input, seated/standing modes, color and motion controls, and AI-generated scene descriptions on demand. Required in store review for core categories.",
+ ["flat","voice","input","accessibility-law"]),
+ N("input","🎮","Hands, Mice, Controllers","Input",
+ "You can control NovaOS with your hands in the air, a mouse, a touchscreen, a game controller or your voice.",
+ "Different gadgets and different people need different ways to point and press.",
+ "Playing the same game with a joystick, a keyboard or by waving your hands.",
+ "Unified action-mapping layer (OpenXR actions extended to all devices) so apps declare actions ('grab', 'select') and the OS maps them to whatever input exists, including eye-tracking plus pinch, gaze dwell, voice commands and switch access. Haptics API included.",
+ ["sensors","vr","a11y","games"]),
+ N("moderation-world","🧹","Playground Monitors","World Safety",
+ "Playground Monitors keep rooms friendly: personal space bubbles, mute and block, reporting, and grown-up rules for kids' rooms.",
+ "A shared world needs shared manners and quick help when someone is unkind.",
+ "Teachers on playground duty, plus a rule that you can always walk away.",
+ "Personal boundary enforcement, block/mute synced to identity, on-device toxicity detection for voice/text (opt-in for adults, on for kids), signed incident reports with room state snapshots, age-gated rooms verified via credentials, and human moderator escalation for public spaces. Ties into Family Controls and the Rulebook's moderation policy.",
+ ["parental","voice","rooms","moderation"])]));
+
+const ROBOTS=F(255,N("robots","🤖","Robot Helpers","AI Harness",
+"Robot Helpers are the AI parts of NovaOS: a friendly assistant you can talk to, and helpers that can do chores for you, always asking before doing anything important.",
+"AI is the biggest new superpower a computer can have, and it only works well when it is built into the whole system safely.",
+"A helpful robot butler who knows your house, asks before opening drawers, and writes down everything it did.",
+"A system-level agent harness: model router (on-device and cloud), tool-use runtime with capability-scoped permissions, layered memory with user control, skills as sandboxed Wasm components, safety policy engine, evaluation and tracing, and an agent-to-agent messaging layer over Bridge Protocol. Comparable: Model Context Protocol servers, OpenAI/Anthropic agent SDKs, Apple Intelligence's on-device/private-cloud split, Android's AICore.",
+["locks","toybox","apps","workshop"],[
+ N("assistant","💬","Nova","The Assistant",
+ "Nova is the helper you can talk or type to anywhere: 'find my dinosaur drawing', 'call grandma', 'explain fractions'.",
+ "One helper who understands the whole computer beats a hundred confusing menus.",
+ "A friendly guide who knows where everything in the school is.",
+ "System assistant with multimodal input (voice, text, screen, camera, 3D scene), grounded in the on-device search index and app-exposed intents; conversation state lives in short-term memory; sensitive actions go through the safety rails. Apps expose intents through the SDK (App Intents / Android App Actions-style) so Nova can act inside them.",
+ ["context","router","rails","agents","search-index"]),
+ N("agents","🧑‍🔧","Helpers That Do Chores","Agents",
+ "Agents are helpers that can do a whole job with many steps: 'plan my birthday party' means making a list, checking the calendar and drafting invitations.",
+ "Doing many small steps for you is where AI saves real time.",
+ "Asking a big sibling to organize the whole game, not just fetch one ball.",
+ "Agents are long-running tasks executed by a planner-executor loop with tool access, checkpoints, budgets (tokens, time, money) and resumability. Each agent runs as its own sandboxed principal with a subset of the user's capabilities; progress is visible in a task tray; every step is traced. Multiple agents can be delegated to and coordinated.",
+ ["planner","tools","tool-perms","rails","a2a"],[
+  N("planner","🗺️","Making a Plan","Planner",
+  "The Planner breaks a big job into small steps and checks them off one by one.",
+  "Big jobs are easier when broken into small ones, for people and robots alike.",
+  "Writing a to-do list before cleaning your room.",
+  "Model-driven planning with explicit, user-visible plan documents (editable before execution), sub-task delegation, retries with backoff and a stop-on-uncertainty rule that pauses and asks the user. Plans and results are stored as objects so they can be reviewed later.",
+  ["agents","tools","evals"]),
+  N("tools","🧰","Borrowing Tools","Tool Use",
+  "Tools are the things a robot helper can pick up: the calendar, the camera, a web search, a payment.",
+  "A helper that can only talk is not as useful as one that can also do.",
+  "A robot that can use the same toolbox you use, one tool at a time.",
+  "Tools are typed functions exposed by apps and the OS (JSON Schema descriptions, MCP-compatible), invoked through IPC with the agent's capabilities; results are structured. System tools cover files, contacts, calendar, messaging, payments, browser automation and 3D scene manipulation. Tool calls are logged with inputs/outputs.",
+  ["tool-perms","ipc","sdk","agents"]),
+  N("tool-perms","🪪","Tool Passes","Tool Permissions",
+  "A Tool Pass says which tools a helper may use for this job; dangerous ones (sending money, deleting) need a fresh yes from you.",
+  "Even a good helper should not be able to spend your money without asking.",
+  "A hall pass that lets you go to the library but not leave the school.",
+  "Per-task capability grants derived from the user's permissions with risk tiers: read-only (auto), reversible writes (auto within budget), irreversible or external (confirm), financial (confirm + biometric). Grants expire with the task; kids' agents inherit family policies. Modeled on capability security and OS permission prompts.",
+  ["permissions","rails","approvals","agents"])]),
+ N("memory-ai","🧠","Remembering","Memory",
+ "Remembering lets the helper know what you talked about a minute ago and what you like, but you can see and erase anything it remembers.",
+ "A helper who forgets your name every time is annoying; one who remembers too much is creepy. You get to choose.",
+ "A notebook the robot keeps about you, which you can read and tear pages out of.",
+ "Three tiers: short-term conversation state, long-term user memory (facts, preferences, project notes) stored as encrypted objects in the user's Toy Box, and episodic task traces. Retrieval via the on-device vector index. All memory is per-user, per-profile, inspectable in Settings, and deletable; nothing is used for training without explicit opt-in.",
+ ["short-mem","long-mem","forget","objects"],[
+  N("short-mem","📝","Sticky Note","Short-Term Memory",
+  "The Sticky Note holds what you are talking about right now so you do not have to repeat yourself.",
+  "Conversations only make sense if the other side remembers the last thing you said.",
+  "Remembering the question while you look for the answer.",
+  "Conversation context window plus a working scratchpad per task, kept in memory and discarded at session end unless the user pins it; summarization keeps long sessions within model limits.",
+  ["memory-ai","assistant","context"]),
+  N("long-mem","📚","Scrapbook","Long-Term Memory",
+  "The Scrapbook keeps things worth remembering for months: your favorite color, that you have a math test Friday.",
+  "It is what makes a helper feel like yours.",
+  "A scrapbook of the important stuff, kept in your own toy box.",
+  "Structured memory entries (fact, preference, project) with source, timestamp and confidence, stored as encrypted objects and indexed with embeddings; retrieval is scoped by profile and app context; users review and edit entries in a Memory screen. Follows the pattern of retrieval-augmented personalization rather than fine-tuning.",
+  ["memory-ai","search-index","forget"]),
+  N("forget","🧽","Eraser","Forgetting",
+  "The Eraser deletes anything the helper remembers, one thing or everything, and it is really gone.",
+  "Being able to forget is part of being trustworthy.",
+  "Tearing a page out of the notebook and shredding it.",
+  "Hard deletion of memory objects and their index vectors, propagation over sync, retention rules (auto-expire episodic traces after N days), and a 'private session' mode that writes no memory at all. Cloud inference is stateless; nothing is retained server-side after the response.",
+  ["memory-ai","privacy-defaults","audit"])]),
+ N("skills","🎒","Skill Backpack","Skills & Plugins",
+ "Skills are little add-ons that teach the helper new tricks: a recipe skill, a chess coach, a homework checker.",
+ "Nobody can build every ability in advance; the world's creators should be able to add them.",
+ "Trading cards that give your robot a new move.",
+ "Skills are Wasm components (WASI) bundled with a manifest of tools, prompts, required permissions and evaluation cases; installed from the Store after review; run in the sandbox tier with no ambient access. MCP-compatible servers can be wrapped as skills. Versioned, signed, and revocable.",
+ ["sandbox","store","review","tools"]),
+ N("rails","🛑","Ask Before Doing","Safety Rails",
+ "Safety Rails make the helper stop and ask before anything risky, refuse harmful requests, and never pretend to be a person.",
+ "Powerful helpers need clear rules, just like powerful tools.",
+ "Bumpers at the bowling alley: you can still play, but the ball stays out of the gutter.",
+ "Policy engine evaluating each tool call and response against user, family and platform policies (risk tiers, content policies, impersonation and disclosure rules); confirmations with plain-language explanations; hard limits that no prompt can lift (payments above threshold, disabling security). Prompt-injection defenses: tool outputs and web content are treated as untrusted data, never instructions.",
+ ["tool-perms","kidsafe","evals","permissions"]),
+ N("ondevice","📱","Small Brain in Your Pocket","On-Device Models",
+ "A small AI brain lives right on your gadget, so simple questions get answered fast, offline, and without sending your stuff anywhere.",
+ "Private and quick beats big and slow for most everyday help.",
+ "Knowing your times tables by heart instead of looking them up.",
+ "Quantized (4-8 bit) language, vision, speech and embedding models (~1-8B parameters) running on the NPU/GPU through a unified inference runtime (ONNX / MLX / Core ML-class); used for search indexing, captions, dictation, summarization, tagging and safety classification. Models are updated as system components and shared across apps.",
+ ["gpu","router","search-index","power"]),
+ N("cloud","🌩️","Big Brain in the Sky","Cloud Models",
+ "For hard jobs, the helper can ask a much bigger brain on powerful computers far away, sending only what is needed.",
+ "Some questions need more thinking than a small gadget can do.",
+ "Calling a teacher when the homework is too hard for your big sibling.",
+ "Frontier models accessed through a provider-neutral API with per-request data minimization, end-to-end encryption to attested compute (private-cloud style: no logging, no retention, verifiable server images), user-selectable providers, and cost budgets. The router decides when to escalate.",
+ ["router","encryption-transit","privacy-defaults"]),
+ N("router","🔀","Pick the Right Brain","Model Router",
+ "The Router chooses which brain should answer: the small one on your gadget for quick things, the big one far away for hard things.",
+ "Using the biggest brain for everything would be slow, costly and drain the battery.",
+ "Asking a friend for easy questions and a teacher for hard ones.",
+ "Routing policy considers task type, confidence from the small model, privacy class of the data, latency budget, battery/thermal state and cost budget; supports cascades (try small, escalate on low confidence) and user pinning. Exposes a single Inference API to apps so they never hard-code a provider.",
+ ["ondevice","cloud","power","sdk"]),
+ N("evals","📊","Report Card","Evaluation & Logs",
+ "The Report Card checks how well helpers do their jobs and keeps a log of what they did so mistakes can be found and fixed.",
+ "You cannot trust or improve what you do not measure.",
+ "Grading the robot's homework and keeping its notebook.",
+ "Per-task traces (prompts, tool calls, outputs, latencies, costs) stored locally in the audit log; skill developers ship evaluation suites run in simulators before store approval; opt-in anonymized aggregate metrics; red-team suites for safety regressions in every OS release.",
+ ["audit","review","planner","telemetry"]),
+ N("kidsafe","🧒","Kid-Safe Mode","Child-Appropriate AI",
+ "In Kid-Safe Mode the helper talks simply, avoids grown-up topics, never keeps secrets from parents about safety, and explains instead of just doing.",
+ "Kids deserve a helper that is patient, honest and safe.",
+ "A babysitter who plays along but still follows the house rules.",
+ "Age-bracket policies from Family Controls tune the system prompt, content classifiers, tool tiers (no payments, restricted browsing), memory retention and disclosure rules (always identifies as AI, encourages asking a trusted adult). Guardians can review conversation summaries with a clear indicator to the child.",
+ ["parental","rails","school","kids-law"]),
+ N("a2a","🤖↔️🤖","Robots Talking to Robots","Agent-to-Agent Messaging",
+ "Your helper can talk to a friend's helper or a shop's helper to sort out details, like finding a time everyone is free.",
+ "A lot of chores are really conversations between two people's assistants.",
+ "Two kids' parents texting each other to plan a playdate.",
+ "Agents exchange typed proposals and commitments over Bridge Protocol channels using a small negotiation vocabulary (offer, accept, counter, need-human), signed by the owner's NovaID with clearly bounded authority; humans confirm commitments above policy thresholds. Aligns with emerging agent interop protocols (A2A, MCP).",
+ ["bridge","agents","tool-perms","calendar"]),
+ N("context","🔦","What the Robot Can See","Context & Grounding",
+ "Context is what the helper is allowed to look at right now: this screen, this file, this room, and nothing more unless you say so.",
+ "Good help needs the right information; privacy needs it to be only the right information.",
+ "Showing a friend one page of your notebook instead of the whole thing.",
+ "Context assembly gathers only permitted sources (focused app content via accessibility tree or intents, selected files, room state, recent conversation, memory hits) with per-source labels and provenance; sensitive fields are redacted before cloud calls; users see a 'what Nova used' panel for every answer.",
+ ["assistant","search-index","short-mem","permissions"])]));
+
+const APPS=F(95,N("apps","📱","Apps","Core Applications",
+"Apps are the tools you actually use every day: chatting, drawing, learning, watching, paying. NovaOS ships a full set so the computer is useful on day one.",
+"An OS without great apps is an empty playground.",
+"The toys that come in the box with the toy chest.",
+"First-party apps are built on the same public SDK third parties use (no private APIs), share the object store, identity, payments and AI harness, and each exposes intents to the assistant. Every core app has offline support, accessibility conformance and a 2D and 3D presentation.",
+["toybox","piggy","robots","playground"],[
+ N("browser","🌐","Window to the Web","Browser",
+ "The Window to the Web shows you any website, blocks trackers, and can pull a web page into the Playground as a floating screen.",
+ "The web is the biggest library in the world; you need a good, safe way in.",
+ "A window you can open onto any place in the world.",
+ "Based on an open engine (Chromium/Blink or Servo for a Rust-first stack) with the NovaOS sandbox per site, tracker and fingerprinting protection by default, passkey autofill, payment sheet integration, WebGPU/WebXR support and a Bridge gateway for nova: links. Extensions run as Wasm skills.",
+ ["web-compat","passkeys","merchants","gateway"]),
+ N("messages","💬","Notes to Friends","Messages",
+ "Messages lets you text, send pictures, voice notes and money to friends, sealed so only they can read it.",
+ "Talking to people is the number one thing anyone does on a computer.",
+ "Passing notes in class, but the notes are sealed and can hold a photo.",
+ "Bridge Protocol messaging with MLS group encryption, multi-device, reactions, threads, ephemeral messages, and rich objects (files, payments, room invites, agent proposals). Interoperates with Matrix, RCS and email through gateways. Contact requests use Abuse Resistance introduction tokens.",
+ ["e2e","transfers","sharing","antispam"]),
+ N("calls","📹","Face to Face","Video Calls",
+ "Face to Face lets you see and hear people in a video call, or meet them as avatars in a room.",
+ "Seeing someone's face is the next best thing to being there.",
+ "A magic mirror where grandma appears.",
+ "Real-time video (AV1/H.265, simulcast/SVC), Opus audio, end-to-end encrypted, over the realtime channel with an SFU relay for groups; live captions and translation on-device; seamless switch between flat video call and shared 3D room. Interoperable with WebRTC through gateways.",
+ ["realtime","voice","rooms","a11y"]),
+ N("mail","📧","Old-Fashioned Letters","Mail",
+ "Mail is for the old-style letters grown-ups and schools still send; NovaOS reads them, sorts them and spots the scams.",
+ "Email is not going away, so it should at least be pleasant and safe.",
+ "The paper mail that still arrives even though everyone texts.",
+ "Standards-based client (IMAP/JMAP, SMTP, OpenPGP/S-MIME optional) with on-device categorization and summarization, phishing detection tied to Fraud Watch, and Bridge-native delivery when both sides are NovaIDs. Each NovaID gets an email gateway address.",
+ ["gateway","fraud","assistant"]),
+ N("calendar","📆","Days & Plans","Calendar",
+ "Days & Plans shows what is happening when, for you and your family, and helpers can find free time for everyone.",
+ "Knowing what is coming stops the 'I forgot!' moments.",
+ "The big calendar on the fridge with everyone's stickers.",
+ "CalDAV/iCalendar-compatible with shared family calendars as CRDT objects, availability sharing via agent-to-agent negotiation, travel-time awareness from Maps, and school timetable import. Reminders are system-level so they fire from any device.",
+ ["a2a","maps","school","crdt"]),
+ N("photos","📸","Picture Album","Photos",
+ "Picture Album keeps every photo and video, finds them by who or what is in them, and never shares anything unless you say so.",
+ "Photos are the memories people would be saddest to lose.",
+ "A photo album that can find 'the beach trip' when you ask.",
+ "Object-store backed library with on-device face/scene recognition (never uploaded), non-destructive edits stored as version deltas, shared albums via capability links, C2PA content credentials preserved, and RAW/HEIF/AVIF/JPEG XL support.",
+ ["objects","tags","search-index","camera"]),
+ N("media","🎵","Songs & Shows","Music & Video",
+ "Songs & Shows plays your music, podcasts and videos anywhere, including as a giant screen in your 3D room.",
+ "Everyone loves music and movies; they should just work on every gadget.",
+ "A jukebox and a movie projector in one.",
+ "System media framework (hardware-decoded AV1/H.265/VP9, Opus/FLAC/AAC), Now Playing controls shared across devices, casting to TVs over Bridge, DRM modules (Widevine-class) sandboxed for licensed content, and a spatial cinema mode in the Playground.",
+ ["audio-hw","tv","formats","subs"]),
+ N("notes","📝","Idea Pad","Notes",
+ "Idea Pad is for writing, lists, doodles and voice notes, and friends can write in the same note at the same time.",
+ "Quick notes are where homework, plans and ideas start.",
+ "A notebook that friends can write in from their own houses.",
+ "CRDT rich-text and canvas documents with ink, attachments, checklists and embedded objects; live collaboration; Markdown export; assistant summarization and search; template gallery.",
+ ["crdt","sharing","assistant"]),
+ N("maps","🗺️","Where Am I","Maps",
+ "Where Am I shows maps, finds the way to school, and can help you find a lost gadget, while keeping your location private.",
+ "Getting places and knowing where your stuff is are everyday problems.",
+ "A treasure map that always knows where you are standing.",
+ "Open map data (OpenStreetMap-based) rendered offline, on-device routing, location permission with fuzzed precision tiers, family location sharing under Family Controls, and an AR walking mode in the Playground.",
+ ["sensors","permissions","parental","vr"]),
+ N("store","🏬","The Toy Shop","App Store",
+ "The Toy Shop is where you get apps, games, skills and 3D things, all checked for safety, with kid-friendly filters and prices shown in your allowance.",
+ "A safe shop makes trying new things safe.",
+ "A toy shop where every toy is checked before it goes on the shelf.",
+ "Store for apps, skills, avatars and rooms with automated plus human review, privacy labels from the manifest, age ratings, transparent pricing through Ledger with capped fees, sideloading allowed for adults with a clear warning, and alternative stores permitted under the Rulebook. Updates are delta-based and signed.",
+ ["review","packaging","merchants","parental"]),
+ N("games","🕹️","Games Hub","Games",
+ "Games Hub is where your games, friends' scores and multiplayer parties live, all inside the Playground.",
+ "Games are how many kids first love computers.",
+ "The arcade at the end of the playground.",
+ "Game library, friends and parties over Bridge, achievements, cloud saves in the object store, controller mapping, and shared netcode so indie games get multiplayer cheaply. Play-time and spending rules from Family Controls apply.",
+ ["netcode","input","allowance","console"]),
+ N("school","🎓","School Corner","Learning",
+ "School Corner holds lessons, homework and quizzes, and a patient robot tutor who explains things as many times as you need.",
+ "A computer that helps you learn is worth more than one that only entertains.",
+ "A classroom that fits in your pocket, with a teacher who never gets tired.",
+ "LTI/xAPI-compatible learning tools, classroom mode (teacher controls devices on the local network), a tutoring agent in Kid-Safe Mode with curriculum grounding, progress shared with guardians, and offline-first content packs.",
+ ["kidsafe","calendar","parental","kid-ide"]),
+ N("health","❤️","Body Buddy","Health",
+ "Body Buddy tracks steps, sleep and how you feel, keeps it super private, and can share it only with a doctor or parent you choose.",
+ "Health information is the most private information there is.",
+ "A diary about your body that only you and your doctor can read.",
+ "Encrypted health store (FHIR-compatible records, HealthKit-like API) with the strictest key class, watch sensor integration, explicit per-data-type sharing grants, and no advertising or model-training use ever.",
+ ["encryption-rest","watch","permissions"]),
+ N("wallet-app","👛","Wallet App","Payments",
+ "The Wallet App is the screen for your Piggy Bank: your balance, allowance, receipts, subscriptions and the pay button.",
+ "You need one clear place to see and control your money.",
+ "Opening your piggy bank and counting the coins.",
+ "UI over Ledger Protocol: accounts, transactions with receipts, mandates, limits, approvals inbox, tap-to-pay (NFC/QR) and a savings goals view; kids see a simplified layout. Built on the same SDK so third-party finance apps can offer equivalent features.",
+ ["wallets","subs","receipts","approvals"]),
+ N("settings","⚙️","The Control Room","Settings",
+ "The Control Room is where you change how everything works: theme, sounds, who can do what, and what the robot remembers.",
+ "You should be able to make the computer yours.",
+ "The switches and knobs panel for your whole house.",
+ "Searchable settings backed by a typed policy store; privacy dashboard (permissions, audit log, memory), family management, device registry, storage, network and accessibility panels; settings sync across devices per profile.",
+ ["permissions","audit","memory-ai","devices-list"]),
+ N("files-app","📁","Toy Box App","Files",
+ "The Toy Box App shows all your stuff in folders, on shelves in 3D, or as a timeline, with time travel and easy sharing.",
+ "Even with great search, people like to browse.",
+ "Opening the toy chest and seeing everything sorted on shelves.",
+ "Object-store browser with folders, tags and smart folders, version timeline scrubber, sharing sheet, offline availability controls and a 3D shelf mode in the Playground; provides the system file picker used by every sandboxed app.",
+ ["objects","versions","trash","world"]),
+ N("camera","📷","Picture Taker","Camera",
+ "The Picture Taker snaps photos, videos and 3D scans of real toys to bring them into the Playground.",
+ "Making things from the real world is the most fun way to create.",
+ "A camera that can also make a copy of your teddy bear for the computer.",
+ "Camera HAL with computational photography pipeline, RAW capture, depth and LiDAR scanning to glTF meshes, C2PA content credentials on capture, and a hardware-linked indicator whenever the camera is active.",
+ ["sensors","photos","assets","studio"]),
+ N("studio","🎨","Creative Studio","Draw, Build & Code",
+ "Creative Studio is where you draw, build 3D things and even code your own toys for the Playground.",
+ "Making things, not just using things, is what turns kids into builders.",
+ "An art room, a workshop and a science lab all in one.",
+ "Suite of drawing (vector/raster, ink), 3D building (block-based modeling, node materials, scene composition) and coding tools sharing one CRDT document model; exports to open formats; AI assistance for generating variants with provenance labels; publishes directly to rooms and the Store.",
+ ["crdt","assets","kid-ide","store"],[
+  N("draw","🖍️","Drawing Table","2D Art",
+  "The Drawing Table is a big sheet of paper with every crayon, brush and sticker you could want.",
+  "Drawing is the first way most people create on a screen.",
+  "A giant art table with unlimited paper.",
+  "Vector and raster canvas with pressure-sensitive ink, layers, non-destructive filters, and collaborative drawing over CRDTs; exports SVG/PNG/JPEG XL; brushes are shareable objects.",
+  ["studio","crdt","photos"]),
+  N("build3d","🧱","Block Builder 3D","3D Modeling",
+  "Block Builder 3D lets you snap shapes together to make houses, robots and rooms you can walk into.",
+  "The Playground is only as fun as the things people build for it.",
+  "LEGO, but the bricks can be any shape and you can walk inside your castle.",
+  "Beginner mode: voxel and primitive snapping; advanced mode: mesh editing, rigging and node-based materials; live preview in a room; exports glTF/USD with licenses and provenance.",
+  ["studio","assets","rooms","shaders"]),
+  N("code-kid","🧩","Code Blocks","Coding for Kids",
+  "Code Blocks lets you snap together puzzle-piece commands to make your creations move, talk and play games.",
+  "Coding is a superpower every kid should get to try.",
+  "Giving your toy robot a list of instructions written as puzzle pieces.",
+  "Scratch-style blocks that compile to a real scripting language (TypeScript/Lua) with a side-by-side text view; the same runtime the Kid IDE uses; scripts attach to room objects and run in the sandbox tier.",
+  ["kid-ide","studio","rooms"])])]));
+
+const WORKSHOP=F(20,N("workshop","🛠️","Builder's Workshop","Developer Tools & SDK",
+"The Builder's Workshop is where people (kids and grown-ups) make new apps, skills and 3D things for NovaOS.",
+"An OS lives or dies by the people building for it.",
+"The school woodshop: tools, instructions and a place to test what you built.",
+"Developer platform: a block-to-code IDE for beginners, a professional IDE, a multi-language SDK with a stable ABI, packaging and signing tools, permissions manifest, store review pipeline, device simulators, crash/telemetry service and documentation. Comparable: Xcode + Android Studio + Unity + Scratch, unified.",
+["apps","robots","playground","rulebook"],[
+ N("kid-ide","🧩","Block Builder","Kid IDE",
+ "Block Builder is a coding app for kids: snap puzzle pieces together, see your creation move in the Playground instantly, and peek at the real code when ready.",
+ "Starting easy and growing into real code keeps kids building instead of quitting.",
+ "Training wheels that slowly come off as you learn to ride.",
+ "Blocks map one-to-one to a TypeScript/Lua subset with a live toggle to text; projects are CRDT documents (pair programming built in); a robot tutor explains errors in kid words; publishing to a family room takes one tap, to the Store needs a guardian.",
+ ["code-kid","studio","school","pro-ide"]),
+ N("pro-ide","💻","Pro Workbench","Grown-up IDE",
+ "The Pro Workbench is the full coding studio for grown-ups, with a robot pair programmer built in.",
+ "Serious apps need serious tools.",
+ "A real carpenter's workshop with power tools.",
+ "Language-server based editor (LSP/DAP), Rust/Swift/Kotlin/TypeScript/C++ toolchains, integrated simulators, profiler and GPU debugger, 3D scene editor, live-reload to devices over Bridge, and the AI harness for code assistance with repository-scoped permissions.",
+ ["sdk","simulators","ai-in-ide","packaging"]),
+ N("sdk","📚","The Parts Catalog","SDK & APIs",
+ "The Parts Catalog lists every ready-made piece an app can use: buttons, 3D objects, payments, robot helpers, files.",
+ "Builders should not have to reinvent the wheel.",
+ "A catalog of LEGO pieces with instructions for each one.",
+ "Stable, versioned public APIs (IDL-generated bindings for Rust, Swift, Kotlin, TypeScript, C++, Wasm): UI Kit, Scene API, Data API (object store), Identity, Payments sheet, Inference API, Intents, Netcode and Media. No private APIs for first-party apps; deprecations follow a 24-month policy.",
+ ["ipc","ui-kit","router","docs"]),
+ N("packaging","📦","Boxing Up an App","Packaging & Signing",
+ "Boxing Up puts your finished app in a sealed box with a label so NovaOS knows exactly what is inside and who made it.",
+ "A sealed, labeled box is how the OS knows an app has not been tampered with.",
+ "Putting your science project in a box with your name and a list of parts on the lid.",
+ "Single package format (content-addressed bundle with manifest, signed by the developer's NovaID, reproducible builds encouraged) containing native code per architecture and/or Wasm; delta updates; signatures logged to a transparency log; the same format for apps, skills, avatars and rooms.",
+ ["manifest","review","store","updates"]),
+ N("manifest","📋","The Permission List","Permissions Manifest",
+ "The Permission List is a note in every app's box saying exactly which things it might ask to use, so nothing is a surprise.",
+ "Knowing what an app might ask for up front is how people, and reviewers, catch sneaky ones.",
+ "A field-trip form listing everywhere the class might go.",
+ "Declarative manifest (capabilities, intents exposed, data types accessed, network destinations, age rating, tools offered to agents) that generates the Store's privacy label and constrains runtime prompts: an app cannot request what it did not declare. Reviewed automatically and diffed on every update.",
+ ["permissions","review","packaging","store"]),
+ N("review","✅","The Checker","Store Review",
+ "The Checker tests every app before it goes in the shop, looking for cheating, danger or things that are not kid-friendly.",
+ "Checking first is far better than cleaning up after.",
+ "The teacher looking over the science projects before the fair opens.",
+ "Automated static and dynamic analysis in simulators (permission use vs. manifest, network destinations, accessibility, offline behavior, performance budgets), AI skill evaluation suites, then human review for sensitive categories; published review criteria, appeals process and turnaround SLAs per the Rulebook.",
+ ["manifest","evals","threat","store"]),
+ N("simulators","🧪","Pretend Devices","Simulators",
+ "Pretend Devices let you test your app on a phone, a headset or a car screen without owning them.",
+ "Nobody owns every gadget; builders still need to test everywhere.",
+ "Practicing a play on a cardboard stage before the real one.",
+ "Full-system emulators for each device class running the real OS image in a microVM, with simulated sensors, network conditions (latency, loss), multi-user rooms for netcode testing, and scriptable UI automation; runs in CI.",
+ ["sandbox","pro-ide","platforms","review"]),
+ N("telemetry","📈","What Broke?","Crash Reports & Telemetry",
+ "What Broke? tells builders when their app crashed, without sending anyone's private stuff.",
+ "You cannot fix a problem you never hear about.",
+ "A note that says 'the toy broke when I pressed the red button', without saying who pressed it.",
+ "Opt-in crash reporting with symbolicated stacks and scrubbed context, differential-privacy aggregate metrics, performance traces, and no user identifiers; users see and control what is sent in Settings. Framework doubles as the OS's own quality signal.",
+ ["evals","privacy-defaults","settings"]),
+ N("docs","📖","The Instruction Book","Documentation",
+ "The Instruction Book explains every part, with pictures and try-it-yourself examples, in kid words and grown-up words.",
+ "Great tools with bad instructions are just puzzles.",
+ "The picture instructions that come with a LEGO set.",
+ "Generated API reference from the IDL, guides, sample apps, interactive playgrounds, this very explorer as a living architecture map, and an assistant grounded in the docs inside the IDE. Open-source and community-editable with review.",
+ ["sdk","kid-ide","open-standards"]),
+ N("ai-in-ide","🤖","Robot Pair Programmer","AI Coding Assistant",
+ "The Robot Pair Programmer sits next to you while you build, explains errors, suggests code and can even test your app for you.",
+ "Coding is faster and less frustrating with a patient helper.",
+ "A friend who has read the whole instruction book and helps you build.",
+ "Agent harness scoped to the project directory and simulators, with tool access to the compiler, tests, debugger and docs; every change is a reviewable diff; kids' mode explains rather than writes; runs on-device or cloud via the router.",
+ ["agents","pro-ide","kid-ide","router"]),
+ N("ui-kit","🎛️","Nova UI Kit","Adaptive UI Toolkit",
+ "The UI Kit is the box of buttons, menus and panels every app uses, so apps look and feel familiar on every gadget.",
+ "Familiar buttons mean nobody has to relearn each app.",
+ "The same kind of door handles in every room so you never fumble.",
+ "Declarative, reactive UI framework (SwiftUI/Compose-style) rendering to both the 2D compositor and 3D panels, with built-in accessibility, theming, localization and input adaptation (touch, pointer, gaze, controller). Web apps get an equivalent CSS/JS component library.",
+ ["sdk","adaptive-ui","a11y","flat"])]));
+
+const PLATFORMS=F(160,N("platforms","🗺️","Where It Runs","Platforms",
+"Where It Runs lists every kind of gadget NovaOS works on, from a watch to a car, all from one set of code that changes shape to fit.",
+"A competitive OS has to be everywhere people are, and feel the same everywhere.",
+"The same LEGO set built as a small car, a big truck or a spaceship, using the same bricks.",
+"One codebase (kernel, services, shell, apps) with hardware abstraction per device class; the adaptive UI toolkit and 3D/2D shell switch presentation by form factor and input. Compatibility layers host existing Windows, Android, Linux and web apps during adoption. Targets: x86-64 and ARM64 (RISC-V planned).",
+["engine","playground","workshop"],[
+ N("desktop","🖥️","Big Desk Computer","Desktop",
+ "A desktop is the big powerful computer with a huge screen where the 3D Playground looks amazing.",
+ "Serious work and the best graphics still happen at a desk.",
+ "The workshop bench where the big projects get built.",
+ "x86-64/ARM64 towers and all-in-ones with discrete GPUs; multi-monitor spatial layouts; full Windows and Linux compatibility layers; mouse/keyboard-first flat mode is the default with 3D one key away.",
+ ["compat","flat","pro-ide"]),
+ N("laptop","💻","Folding Computer","Laptop",
+ "A laptop is a computer you can carry, with a keyboard and a lid, great for homework and building.",
+ "Most school and office work happens here.",
+ "A notebook that is also a computer.",
+ "Power-managed ARM64/x86-64 with battery-aware scheduling, lid/dock detection switching layouts, webcam-based hand and face tracking for light 3D interaction, and instant-resume from the CoW filesystem snapshots.",
+ ["power","adaptive-ui","one-codebase"]),
+ N("phone","📱","Pocket Computer","Phone",
+ "The phone is the computer in your pocket: it is your key, your wallet, your camera and your walkie-talkie.",
+ "The phone is the gadget people always have with them.",
+ "A Swiss Army knife that fits in your pocket.",
+ "ARM64 SoCs with NPU; touch-first adaptive UI; the phone acts as the primary NovaID device (Secure Enclave, passkeys, wallet), AR viewport into rooms via camera, and a companion controller for TV and headset. Android compatibility layer for legacy apps.",
+ ["secure-enclave","wallets","android-compat","camera"]),
+ N("tablet","📟","Big Pocket Computer","Tablet",
+ "A tablet is a bigger touch screen, perfect for drawing, reading and school.",
+ "Bigger screens make creating and learning easier.",
+ "A magic sketchbook.",
+ "Pen-first input with low-latency ink, split-view multitasking, keyboard-attach mode switching to laptop layout, classroom management features, and Android/web app compatibility.",
+ ["draw","school","adaptive-ui"]),
+ N("web","🌐","Runs in a Browser","Web Runtime",
+ "Even on a computer without NovaOS, you can open the Playground and your stuff in a normal web browser.",
+ "Meeting people where they already are is how a new platform spreads.",
+ "Visiting a friend's house through a video call when you cannot be there.",
+ "The shell and core apps compile to WebAssembly + WebGPU/WebXR; Bridge Protocol runs over WebTransport with a relay; identity via passkeys in the browser. Reduced capabilities (no kernel, sandboxed storage) but full rooms, files and messaging.",
+ ["bridge","gateway","web-compat-apps"]),
+ N("console","🎮","Game Box","Console",
+ "The Game Box is the TV computer for games and hanging out with friends in the Playground on the big screen.",
+ "Living-room play is a huge part of gaming.",
+ "The arcade machine in your living room.",
+ "Fixed-spec hardware with a controller-first UI, ultra-low-latency graphics path, party voice, and the shared netcode; the Games Hub is the home screen; kids' profiles enforce Family Controls.",
+ ["games","netcode","input","tv"]),
+ N("vr-headset","🥽","Goggles","VR / AR Headset",
+ "Goggles put you inside the Playground and let you see your apps floating in your real room.",
+ "The headset is where the 3D desktop feels most natural.",
+ "Goggles that turn your bedroom into a spaceship.",
+ "OpenXR-native runtime, foveated rendering, hand/eye tracking, passthrough AR, strict 90-120 Hz compositor contract, and a phone or laptop as an optional compute companion over Bridge low-latency channel.",
+ ["vr","renderer","sensors","p2p"]),
+ N("car","🚗","Car Screen","Automotive",
+ "In the car, NovaOS shows maps, music and calls in a simple, safe screen, and kids in the back get their own Playground.",
+ "Cars are computers now; they need to be safe first.",
+ "The dashboard and the backseat screens, all speaking NovaOS.",
+ "Safety-certified partition (mixed-criticality: infotainment isolated from vehicle functions), driver-distraction UI rules, voice-first assistant, rear-seat rooms, and phone projection when the car is not natively running NovaOS.",
+ ["flat","maps","assistant","sandbox"]),
+ N("tv","📺","Big Screen","TV",
+ "On the TV, NovaOS shows movies, family photos and a big shared Playground room for everyone on the couch.",
+ "The TV is the family's shared screen.",
+ "The movie theater in your living room.",
+ "10-foot UI with remote and phone-as-controller, casting via Bridge, shared family profile with per-person handoff, and low-power always-on ambient mode.",
+ ["media","console","phone"]),
+ N("watch","⌚","Wrist Computer","Watch",
+ "The watch on your wrist shows the time, counts your steps, buzzes for messages and can pay for a snack.",
+ "The most personal gadget is the one you wear.",
+ "A tiny helper on your wrist.",
+ "Minimal NovaOS profile (kernel + services subset) on low-power SoC, glanceable UI, health sensors, NFC payments with the wallet's small-limit sub-key, and offline sync with the phone.",
+ ["health","wallets","sync"]),
+ N("one-codebase","🧬","One Set of Bricks","Single Codebase",
+ "All these gadgets run the same NovaOS code, so a fix or a new feature arrives everywhere at once.",
+ "Separate systems for each gadget would mean slower fixes and things that do not match.",
+ "One recipe for cookies in every size.",
+ "Monorepo with a board-support layer per device class; the same kernel, services and apps build for every target; feature flags by form factor; CI runs the simulators for all classes on every change.",
+ ["adaptive-ui","simulators","updates"]),
+ N("adaptive-ui","🪄","Shape-Shifting Screens","Adaptive UI",
+ "Apps change shape to fit the gadget: tiny on a watch, big on a TV, floating in 3D on goggles.",
+ "One app that fits everywhere is easier for builders and users.",
+ "Water taking the shape of any cup you pour it into.",
+ "Layout and input adaptation in the UI Kit driven by size classes, input classes and presentation (2D/3D); apps declare capabilities per class; the shell picks flat or spatial presentation and remaps actions.",
+ ["ui-kit","flat","world"]),
+ N("compat","🧳","Running Old Apps","Compatibility Layers",
+ "Running Old Apps lets programs made for Windows, Android or the web run on NovaOS, so switching is not scary.",
+ "People only switch if their favorite things still work.",
+ "A plug adapter so your old toys work in the new house.",
+ "Compatibility layers run in microVMs or translation layers with the NovaOS sandbox around them; they are transitional (clearly labeled) and gated by performance and security budgets.",
+ ["sandbox","platforms"],[
+  N("win-compat","🪟","Windows Programs","Windows Compatibility",
+  "Windows Programs lets grown-up work programs and PC games run on NovaOS.",
+  "A lot of the world's software is Windows software.",
+  "A translator so the old programs understand the new house rules.",
+  "Wine/Proton-style Win32 translation with DXVK/VKD3D for graphics, in a sandboxed compatibility container; a licensed Windows VM option for enterprise. Marked 'compatibility' in the Store with performance labels.",
+  ["compat","desktop","gpu"]),
+  N("android-compat","🤖","Phone Apps","Android Compatibility",
+  "Phone Apps lets existing Android apps run on NovaOS phones and tablets.",
+  "Millions of apps exist; nobody wants to wait for them to be rebuilt.",
+  "Letting your old toys into the new playroom while you slowly get new ones.",
+  "Android runtime (AOSP-based container like Waydroid) with NovaOS permission mapping, no Google services dependency by default, and store labeling. Native apps get priority placement to encourage migration.",
+  ["compat","phone","tablet"]),
+  N("web-compat-apps","🌍","Web Apps","PWA Support",
+  "Web Apps let websites install like real apps, with icons, offline mode and notifications.",
+  "The web is the biggest app store that already exists.",
+  "Pinning a favorite website so it works like a normal app.",
+  "Progressive Web Apps with full manifest support, service workers, WebGPU/WebXR and integration with the payment sheet, passkeys and share sheet; run in the browser engine's per-site sandbox.",
+  ["browser","web","compat"]),
+  N("linux-compat","🐧","Linux Programs","Linux Compatibility",
+  "Linux Programs lets developer tools and servers run on NovaOS.",
+  "Builders need their existing tools on day one.",
+  "Bringing your own toolbox to the new workshop.",
+  "Linux-compatible ABI layer (gVisor-style) or lightweight VM with shared folders and GUI bridging; container tooling (OCI) works out of the box for developers.",
+  ["compat","pro-ide","sandbox"])])]));
+
+const RULEBOOK=F(50,N("rulebook","📜","Rulebook","Governance, Privacy & Openness",
+"The Rulebook is the set of promises NovaOS makes to everyone: it stays open, your stuff is yours, privacy is on by default, and anyone can suggest changes.",
+"Rules made up front keep a powerful system fair as it grows.",
+"The class rules everyone agrees to on the first day of school, written on the wall.",
+"A foundation-governed platform: open specifications (Bridge, Ledger, package format, IDL), open-source core under permissive licenses, published privacy principles, transparent moderation and store policies, a public change-proposal process, and compliance with children's privacy and accessibility regulation. Comparable governance: Linux Foundation, W3C, Matrix.org Foundation, IETF.",
+["locks","piggy","workshop","roadmap"],[
+ N("open-standards","📐","Same Rules for Everyone","Open Standards",
+ "The rules for talking, paying and packaging are written down for free, so anyone can build a gadget or app that works with NovaOS.",
+ "Secret rules lock people in; open rules let the best ideas win.",
+ "Publishing the rules of the game so any team can join the league.",
+ "Bridge Protocol, Ledger Protocol, the package format and the IDL are published specifications with royalty-free patent grants, reference implementations and conformance test suites; changes go through the proposal process and, where relevant, IETF/W3C/ISO standardization tracks.",
+ ["bridge","ledger","proposals","formats"]),
+ N("privacy-defaults","🙈","Private Unless You Say","Privacy Defaults",
+ "Everything starts private: nothing is shared, tracked or sent to a big brain far away unless you choose it.",
+ "Most people never change settings, so the defaults are the real rules.",
+ "Curtains that start closed; you open them if you want.",
+ "Data minimization, on-device processing by default, no advertising identifiers, no cross-app tracking, private cloud inference without retention, and a public privacy label for every system component. Telemetry and memory are opt-in with plain-language explanations.",
+ ["permissions","forget","cloud","telemetry"]),
+ N("ownership","🏠","Your Stuff Is Yours","Data Ownership",
+ "Your files, messages and money records belong to you, and you can take all of them with you any time.",
+ "If you cannot leave, you are not really free to stay.",
+ "Being able to pack up all your toys and move them to a new house.",
+ "Full export of all objects, memories, receipts and identity credentials in open formats through a one-tap tool; relay and backup providers are user-chosen and swappable; NovaID is portable because keys are user-held; interoperable protocols guarantee you can still talk to NovaOS users after leaving.",
+ ["formats","backups","identity","open-standards"]),
+ N("moderation","🧑‍⚖️","Fair Play Rules","Moderation Policy",
+ "Fair Play Rules say what is not allowed in shared rooms and the shop, how to report, and how to appeal if you think a decision was wrong.",
+ "Shared spaces need clear, fair rules that apply to everyone the same way.",
+ "The playground rules, plus a fair way to tell your side if you get in trouble.",
+ "Published community standards, layered enforcement (user tools, room owners, platform moderators), transparency reports, an appeals process with human review, and interoperability with third-party moderation services for federated relays and rooms. Private, end-to-end encrypted spaces are moderated by their members, not the platform.",
+ ["moderation-world","antispam","store","transparency"]),
+ N("updates-cadence","🗓️","When Fresh Paint Comes","Release Cadence",
+ "NovaOS promises regular updates: small safety fixes every month, bigger new features twice a year, and support for gadgets for many years.",
+ "Knowing when things change helps families, schools and builders plan.",
+ "Knowing the school bell schedule.",
+ "Monthly security releases, biannual feature releases with beta channels, a 7-year support commitment per device class, and public roadmaps; API deprecations follow a 24-month notice policy.",
+ ["updates","sdk","roadmap"]),
+ N("proposals","🗳️","Suggesting Changes","Improvement Proposals",
+ "Anyone, even a kid, can write up an idea to change NovaOS; the community discusses it and decides together.",
+ "The best ideas do not all come from inside one company.",
+ "A suggestion box that the whole school actually reads and votes on.",
+ "NovaOS Improvement Proposals (NIPs): public repository, RFC template, working groups per area, maintainers with published decision criteria, and a foundation board with seats for device makers, developers, users and child-safety experts. Modeled on Python PEPs, Rust RFCs and IETF working groups.",
+ ["open-standards","docs","transparency"]),
+ N("transparency","🪟","Show Your Work","Transparency",
+ "NovaOS shows its work: the code is open, the shop's decisions are explained, and every update is publicly recorded.",
+ "Trust comes from being able to check, not from being told to trust.",
+ "A teacher showing the answer key so you can check your own work.",
+ "Open-source core with reproducible builds, binary transparency logs for OS and app signatures, transparency reports for moderation and government requests, published security advisories, and public incident post-mortems.",
+ ["updates","ledger-design","moderation"]),
+ N("accessibility-law","♿","Everyone Welcome","Accessibility Commitment",
+ "NovaOS promises to work for everyone, including people who see, hear or move differently, and checks apps for it too.",
+ "It is the right thing, and in many countries it is the law.",
+ "A school building with ramps and elevators, not just stairs.",
+ "Conformance with WCAG 2.2 AA equivalents for all system UI including spatial content, EN 301 549 and ADA requirements, accessibility review criteria for store apps, and an accessibility advisory group in governance.",
+ ["a11y","review","proposals"]),
+ N("kids-law","🧒","Kid Rules","Children's Privacy & Safety Law",
+ "There are special laws to protect kids online; NovaOS follows them everywhere and often goes further.",
+ "Kids deserve extra protection, and companies must prove they provide it.",
+ "Special rules on the playground for the little kids.",
+ "Compliance with COPPA, GDPR-K, the UK Age Appropriate Design Code and similar: verifiable parental consent via Family Controls, no profiling or ads for children, data minimization, age assurance via credentials rather than document collection, and design standards for kid-safe AI.",
+ ["parental","kidsafe","kyc","privacy-defaults"])]));
+
+const ROADMAP=F(120,N("roadmap","🛤️","Roadmap","How You'd Build It",
+"The Roadmap is the plan for building NovaOS step by step over about four years, starting with the boring-but-important parts and borrowing great pieces that already exist.",
+"A huge project only works if you build it in the right order.",
+"Building a treehouse: first the strong platform, then the walls, then the slide and the paint.",
+"Phased delivery from a developer-preview core to a consumer launch across device classes, with explicit reuse of proven open-source components (Linux drivers in VM, Vulkan, WebRTC/QUIC, Matrix/MLS, FIDO2, ISO 20022, OpenXR, Wasm) so effort concentrates on the differentiators: identity-addressed networking, integrated payments, the 3D shell and the AI harness.",
+["rulebook","engine","workshop"],[
+ N("phase0","🌱","Sketch","Phase 0: Months 0-6",
+ "Sketch is when the team writes down exactly what NovaOS is, draws the plans and builds tiny proofs that the hard parts can work.",
+ "Starting with clear plans saves years of mistakes.",
+ "Drawing your treehouse on paper before cutting any wood.",
+ "Deliverables: architecture spec, Bridge and Ledger protocol drafts, threat model, governance charter, proof-of-concept microkernel boot on a dev board, identity-routing demo across NATs, and a 3D shell mock-up. Team ~30. Decision gate: protocols pass external security review.",
+ ["bridge","ledger","identity","proposals"]),
+ N("phase1","🧪","Prototype","Phase 1: Months 6-18",
+ "Prototype is a rough version that boots, connects two gadgets by name, shows a 3D room and runs a first app.",
+ "You learn the most from the first ugly version that actually works.",
+ "The first wobbly treehouse floor you can stand on.",
+ "Kernel with Rust services, Linux driver VM, object store with versioning and sync, Bridge reference implementation (P2P + relays), flat shell + basic 3D room, SDK alpha, Kid IDE prototype, on-device model runtime. Developer preview on one laptop and one phone reference device. Team ~120.",
+ ["kernel","sync","world","sdk","ondevice"]),
+ N("phase2","🏗️","Alpha","Phase 2: Months 18-30",
+ "Alpha adds the piggy bank, the robot helpers, the app store and the first real apps, tested by friendly families and schools.",
+ "Real people find the problems the builders cannot.",
+ "Inviting a few friends to try the treehouse and tell you what is missing.",
+ "Ledger Protocol with two pilot banks and one instant rail, wallet and family controls, AI harness with tools/skills/memory, Store with review pipeline, core apps (Messages, Files, Browser, Notes, Photos, Studio), netcode library, VR headset support, Android/web compatibility. Closed alpha with 5,000 households and 20 schools. Team ~300.",
+ ["ledger","agents","store","netcode","compat"]),
+ N("phase3","🚀","Beta","Phase 3: Months 30-42",
+ "Beta opens the doors wider: anyone brave can try it, builders publish apps, and the team fixes everything people find.",
+ "Polish comes from thousands of people using it every day.",
+ "Opening the treehouse to the whole street while you fix the squeaky steps.",
+ "Public beta on phone, laptop, headset and web; Windows compatibility; car and TV reference builds; Ledger live in three regions with dispute processes; Kid-Safe AI certified by an external auditor; accessibility conformance; standards submissions (IETF Bridge draft, ISO 20022 mapping). Store opens to third parties.",
+ ["win-compat","kidsafe","accessibility-law","open-standards"]),
+ N("phase4","🎉","Launch","Phase 4: Months 42-48",
+ "Launch is when NovaOS ships on real gadgets you can buy, with a full shop of apps and a promise of updates for years.",
+ "Everything before this was practice.",
+ "The grand opening of the treehouse, with a sign and a party.",
+ "Consumer launch with at least two hardware partners per major device class, 7-year support commitment, foundation governance in place, transparency reports live, and a published roadmap for RISC-V and new regions. Success metrics: retention, time-to-first-app for builders, incident rates, payment dispute ratios.",
+ ["updates-cadence","transparency","platforms"]),
+ N("borrow","🧰","Borrow, Don't Rebuild","Reuse Existing Open Source",
+ "Lots of great pieces already exist for free; NovaOS uses them so the team can spend its energy on the truly new parts.",
+ "Reinventing everything would take decades.",
+ "Using real LEGO bricks instead of molding your own plastic.",
+ "Each borrowed component is wrapped behind a NovaOS interface so it can be replaced later. Selection criteria: license compatibility (permissive or LGPL-in-VM), security track record, active community, and standards alignment.",
+ ["engine","postoffice","piggy","playground"],[
+  N("linux","🐧","Linux Drivers","Linux Kernel (drivers)",
+  "Linux already knows how to talk to almost every gadget part, so NovaOS borrows its translators while writing its own Brain.",
+  "Driver support for thousands of chips would take forever to rewrite.",
+  "Borrowing your neighbor's giant key ring while you make your own keys.",
+  "Linux hosted in a driver VM with virtio devices, exposing hardware to the microkernel's user-space drivers; migrate hot-path drivers (GPU, network, storage) to native Rust drivers over time.",
+  ["drivers","sandbox"]),
+  N("vulkan","🔺","Vulkan","Graphics API",
+  "Vulkan is the common language for talking to Paintbrush chips from every maker.",
+  "One graphics language means one renderer for all gadgets.",
+  "Everyone agreeing to speak the same language in art class.",
+  "Vulkan 1.3 with a MoltenVK-style layer for Metal-only hardware; SPIR-V shaders; WebGPU for the web runtime.",
+  ["gpu","renderer"]),
+  N("webrtc","📞","WebRTC & QUIC","Realtime Transport",
+  "WebRTC and QUIC are proven ways to send voice, video and fast game moves over the internet.",
+  "Real-time networking is hard to get right; these already work for billions of calls.",
+  "Using the school's existing PA system instead of wiring a new one.",
+  "QUIC (RFC 9000) with DATAGRAM extension as the Bridge transport; WebRTC's ICE/STUN/TURN for NAT traversal and its media stack (Opus, AV1, SFU patterns) for calls; WebTransport for browsers.",
+  ["realtime","p2p","calls"]),
+  N("matrix","🔗","Matrix & MLS","Messaging & Group Encryption",
+  "Matrix and MLS are open ways to send sealed group messages that many apps already understand.",
+  "Group chats are tricky to keep both secure and open; this is solved work.",
+  "Using the school's existing note-passing rules that everyone already knows.",
+  "MLS (RFC 9420) for group keys; Matrix room model and federation for interoperability with existing communities; gateways translate Bridge messaging to Matrix events.",
+  ["e2e","messages","gateway"]),
+  N("fido2","🔑","Passkeys / FIDO2","Authentication Standard",
+  "Passkeys are the already-agreed way to log in without passwords, used by phones and websites today.",
+  "Logging in must work with the whole web, not just NovaOS.",
+  "Using the same kind of key everyone else's doors already accept.",
+  "WebAuthn Level 3 / CTAP2.2 implementation in the Secure Enclave with cross-device authentication (hybrid transport) and synced credentials.",
+  ["passkeys","identity"]),
+  N("iso20022","🏦","ISO 20022","Financial Messaging Standard",
+  "ISO 20022 is the language banks use to talk to each other; Ledger Protocol speaks it so banks can join easily.",
+  "Banks will not rewrite their systems for a new OS; the OS has to speak bank.",
+  "Learning the grown-ups' language so they let you play.",
+  "Ledger message types map onto ISO 20022 (pain.001, pacs.008, camt.054) and Open Banking API profiles; instant-rail connectors (FedNow, SEPA Inst, UPI, Pix) are adapters.",
+  ["ledger","bank-bridge"]),
+  N("wasm","🧩","WebAssembly","Portable Sandboxed Code",
+  "WebAssembly is a safe, tiny way to run little programs anywhere, perfect for skills and plugins.",
+  "Plugins need to be safe and run on every gadget.",
+  "Puzzle pieces that fit any puzzle board.",
+  "Wasm Component Model + WASI for skills, extensions and portable app logic, with the web runtime sharing the same modules; Wasmtime-class runtime.",
+  ["skills","sandbox","web"]),
+  N("rust","🦀","Rust","Systems Language",
+  "Rust is the language the Brain and its helpers are written in; it stops whole families of mistakes before they happen.",
+  "Most serious security bugs come from memory mistakes Rust prevents.",
+  "Scissors with safety guards.",
+  "Rust for kernel, services, protocol implementations and the renderer core; C/C++ only in isolated legacy components; formal verification (seL4-style) targeted for the smallest kernel core in a later phase.",
+  ["kernel","memory","pro-ide"]),
+  N("openxr","🥽","OpenXR","VR/AR Standard",
+  "OpenXR is the shared language for headsets and controllers so the Playground works on any goggles.",
+  "Every headset speaking its own language would fracture the 3D world.",
+  "One controller layout everybody's games understand.",
+  "OpenXR 1.1 runtime in the shell with vendor extensions for eye tracking, passthrough and hand tracking; OpenXR actions extended into the OS-wide input layer.",
+  ["vr","input","vr-headset"]),
+  N("sqlite","🗃️","SQLite & CRDT Libraries","Local Data",
+  "SQLite and CRDT libraries are trusted little engines for keeping data safe on the gadget and merging edits from friends.",
+  "Local data is the foundation of offline-first.",
+  "A sturdy notebook and a trick for merging everyone's writing.",
+  "SQLite (with FTS5 and vector extension) for the object index; Yjs/Automerge-style CRDT engine in Rust exposed to all languages through the IDL.",
+  ["objects","crdt","search-index"])]),
+ N("team","👥","Who Builds It","Team & Partners",
+ "Building NovaOS takes kernel experts, artists, game makers, bankers, teachers, safety experts and lots of kid testers.",
+ "A project this wide needs many kinds of experts and real users from day one.",
+ "A school play needs actors, painters, musicians and an audience.",
+ "Core teams: kernel/platform, networking, payments/regulatory, 3D engine, AI harness, apps, developer platform, security, trust and safety, accessibility, design research (including child-development specialists). Partners: two SoC vendors, two device OEMs, pilot banks and an instant-rail operator, schools, and a standards body relationship.",
+ ["proposals","phase0"]),
+ N("risks","⚠️","What Could Go Wrong","Risks & Mitigations",
+ "The biggest dangers: no apps at launch, banks saying no, the 3D world making people dizzy, or the helper doing something silly with money.",
+ "Naming the dangers early is how you avoid them.",
+ "Checking the weather and the ropes before climbing.",
+ "App gap: compatibility layers plus generous developer programs. Regulatory: partner with licensed institutions, never custody funds. Comfort/accessibility: flat mode always first-class. AI safety: hard limits, evals and external audit. Adoption: web runtime and gateways so users are never cut off. Funding: multi-year foundation endowment plus device-maker and Store revenue with capped fees.",
+ ["compat","bank-bridge","flat","rails","phase2"])]));
+
+const ROOT=N("nova","✦","NovaOS","A brand-new operating system (placeholder name)",
+"NovaOS is a made-up name for a brand-new computer system where the desktop is a 3D playground, money and messages are built in, and friendly robot helpers do chores for you, safely.",
+"Today's systems were designed decades ago for flat screens, one person and no AI; this is a fresh start that keeps what works and fixes what doesn't.",
+"Imagine a school that was designed from scratch today: bright rooms, a safe playground, a friendly helper in every hallway, and the same rules for everyone.",
+"NovaOS (placeholder name) is a capability-secure microkernel OS with an object-based, versioned, synced data layer; an identity-addressed encrypted network protocol (Bridge); an open payments protocol (Ledger); a real-time 3D multiplayer shell with a first-class 2D mode; and a system-level AI agent harness. It targets every consumer device class from one codebase and ships compatibility layers for existing app ecosystems. Governance is foundation-based with open specifications.",
+["engine","locks","toybox","postoffice","piggy","playground","robots","apps","workshop","platforms","rulebook","roadmap"],
+[ENGINE,LOCKS,TOYBOX,POST,PIGGY,PLAY,ROBOTS,APPS,WORKSHOP,PLATFORMS,RULEBOOK,ROADMAP]);
+</script>
+
+<script>
+(function(){
+  // ---------- index ----------
+  const byId=new Map(), parent=new Map(), folderOf=new Map(), depth=new Map(), inbound=new Map();
+  (function walk(n,p,d,f){ byId.set(n.id,n); parent.set(n.id,p); depth.set(n.id,d); folderOf.set(n.id,f||n);
+    n.children.forEach(c=>walk(c,n,d+1,f||(d===0?c:null))); })(ROOT,null,0,null);
+  byId.forEach(n=>n.talksTo.forEach(t=>{ if(!byId.has(t)) console.warn("Unknown link",n.id,"->",t); (inbound.get(t)||inbound.set(t,[]).get(t)).push(n.id); }));
+  const ALL=[...byId.values()];
+  const hueOf=id=>{ const f=folderOf.get(id); return f&&f.hue!=null?f.hue:225; };
+  const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+  // ---------- state ----------
+  const state={sel:"nova", expanded:new Set(["nova"]), q:"", level:"kid", view:"explorer"};
+  const $=id=>document.getElementById(id);
+  const treeEl=$("tree"), detailEl=$("detail"), mapEl=$("mapView");
+  try{ const l=localStorage.getItem("nova.level"); if(l==="kid"||l==="grown") state.level=l; }catch(e){}
+  try{ const t=localStorage.getItem("nova.theme"); if(t) document.documentElement.dataset.theme=t; }catch(e){}
+  $("countBadge").textContent=ALL.length+" parts";
+
+  // ---------- search ----------
+  let visible=null; // Set of ids visible under search, or null
+  function matches(n,q){ return (n.kidName+" "+n.grownName+" "+n.kid+" "+n.why+" "+n.example+" "+n.grownUp).toLowerCase().includes(q); }
+  function applySearch(q){
+    state.q=q.trim().toLowerCase(); $("clearSearch").hidden=!state.q;
+    if(!state.q){ visible=null; renderTree(); return; }
+    visible=new Set();
+    ALL.forEach(n=>{ if(matches(n,state.q)){ let c=n; while(c){ visible.add(c.id); c=parent.get(c.id);} } });
+    renderTree();
+  }
+  function hl(text){ if(!state.q) return esc(text); const i=text.toLowerCase().indexOf(state.q); if(i<0) return esc(text);
+    return esc(text.slice(0,i))+"<mark>"+esc(text.slice(i,i+state.q.length))+"</mark>"+esc(text.slice(i+state.q.length)); }
+
+  // ---------- tree ----------
+  function renderTree(){
+    const build=(n,top)=>{
+      if(visible&&!visible.has(n.id)) return "";
+      const has=n.children.length>0, open=visible?true:state.expanded.has(n.id);
+      const kids=has&&open?`<ul role="group">${n.children.map(c=>build(c,false)).join("")}</ul>`:"";
+      return `<li role="none" class="${top?"top-node":""}" style="--h:${hueOf(n.id)}">
+        <div class="node" role="treeitem" tabindex="${n.id===state.sel?0:-1}" data-id="${n.id}" aria-selected="${n.id===state.sel}" ${has?`aria-expanded="${open}"`:""} aria-level="${depth.get(n.id)+1}">
+          <span class="tw ${has?"":"leaf"}">${has?"▶":"•"}</span><span class="ic">${n.icon}</span>
+          <span class="lbl"><span class="kid">${hl(n.kidName)}</span><span class="grown">${hl(n.grownName)}</span></span>
+        </div>${kids}</li>`;
+    };
+    const html=`<ul role="tree" aria-label="NovaOS">${build(ROOT,false)}</ul>`;
+    treeEl.innerHTML=(visible&&visible.size===0)?`<div class="empty">Nothing matches “${esc(state.q)}”. Try another word.</div>`:html;
+    // mark top-level folders
+    treeEl.querySelectorAll('.node[aria-level="2"]').forEach(el=>el.parentElement.classList.add("top-node"));
+    const selEl=treeEl.querySelector(`.node[data-id="${state.sel}"]`); if(selEl) selEl.scrollIntoView({block:"nearest"});
+  }
+  treeEl.addEventListener("click",e=>{
+    const node=e.target.closest(".node"); if(!node) return; const id=node.dataset.id;
+    if(e.target.closest(".tw")&&byId.get(id).children.length){ toggle(id); return; }
+    if(state.sel===id&&byId.get(id).children.length){ toggle(id); }
+    select(id,{fromTree:true});
+  });
+  treeEl.addEventListener("keydown",e=>{
+    const node=e.target.closest(".node"); if(!node) return; const id=node.dataset.id; const n=byId.get(id);
+    const items=[...treeEl.querySelectorAll(".node")]; const i=items.indexOf(node);
+    const focus=el=>{ if(el){ items.forEach(x=>x.tabIndex=-1); el.tabIndex=0; el.focus(); } };
+    switch(e.key){
+      case "ArrowDown": e.preventDefault(); focus(items[i+1]); break;
+      case "ArrowUp": e.preventDefault(); focus(items[i-1]); break;
+      case "ArrowRight": e.preventDefault(); if(n.children.length&&!state.expanded.has(id)&&!visible){ state.expanded.add(id); renderTree(); focus(treeEl.querySelector(`.node[data-id="${id}"]`)); } else focus(items[i+1]); break;
+      case "ArrowLeft": e.preventDefault(); if(n.children.length&&state.expanded.has(id)&&!visible){ state.expanded.delete(id); renderTree(); focus(treeEl.querySelector(`.node[data-id="${id}"]`)); } else { const p=parent.get(id); if(p) focus(treeEl.querySelector(`.node[data-id="${p.id}"]`)); } break;
+      case "Home": e.preventDefault(); focus(items[0]); break;
+      case "End": e.preventDefault(); focus(items[items.length-1]); break;
+      case "Enter": case " ": e.preventDefault(); select(id,{fromTree:true}); break;
+      case "*": e.preventDefault(); n.children.forEach(c=>state.expanded.add(c.id)); state.expanded.add(id); renderTree(); focus(treeEl.querySelector(`.node[data-id="${id}"]`)); break;
+    }
+  });
+  function toggle(id){ state.expanded.has(id)?state.expanded.delete(id):state.expanded.add(id); renderTree(); }
+  $("expandAll").onclick=()=>{ ALL.forEach(n=>n.children.length&&state.expanded.add(n.id)); renderTree(); };
+  $("collapseAll").onclick=()=>{ state.expanded=new Set(["nova"]); renderTree(); };
+
+  // ---------- selection & detail ----------
+  function select(id,opts={}){
+    if(!byId.has(id)) id="nova";
+    state.sel=id; let c=parent.get(id); while(c){ state.expanded.add(c.id); c=parent.get(c.id); }
+    if(byId.get(id).children.length && !opts.fromTree) state.expanded.add(id);
+    if(state.view!=="explorer") setView("explorer",true);
+    renderTree(); renderDetail(); detailEl.scrollTop=0;
+    try{ history.replaceState(null,"","#"+id); }catch(e){}
+    if(!opts.fromTree){ const el=treeEl.querySelector(`.node[data-id="${id}"]`); if(el){ treeEl.querySelectorAll(".node").forEach(x=>x.tabIndex=-1); el.tabIndex=0; } }
+    document.body.classList.remove("drawer-open");
+  }
+  const chip=id=>{ const t=byId.get(id); if(!t) return ""; return `<button class="chip" data-go="${id}"><span>${t.icon}</span>${esc(t.kidName)}<small>${esc(t.grownName)}</small></button>`; };
+  function crumbs(id){ const path=[]; let c=byId.get(id); while(c){ path.unshift(c); c=parent.get(c.id); }
+    return path.map((n,i)=> i===path.length-1?`<span class="here">${n.icon} ${esc(n.kidName)}</span>`:`<button data-go="${n.id}">${n.icon} ${esc(n.kidName)}</button><span class="sep">/</span>`).join(""); }
+  function neighborSVG(n){
+    const links=[...new Set([...n.talksTo,...(inbound.get(n.id)||[])])].filter(id=>byId.has(id)&&id!==n.id).slice(0,10);
+    const p=parent.get(n.id); if(!links.length&&!p) return "";
+    const W=720,H=300,cx=W/2,cy=H/2+10,R=Math.min(120,H/2-40);
+    let s=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="How ${esc(n.kidName)} connects to its neighbors">`;
+    const box=(x,y,w,h,t,id,hue,sub)=>`<g class="lk" data-go="${id}" style="--h:${hue}" tabindex="0" role="link" aria-label="${esc(t)}"><rect x="${x-w/2}" y="${y-h/2}" width="${w}" height="${h}" rx="10" fill="hsl(var(--h) var(--fs) var(--fl2))" stroke="hsl(var(--h) var(--fs) var(--fl))" stroke-width="2"/><text x="${x}" y="${y+(sub?-2:5)}" text-anchor="middle" font-size="13" font-weight="700">${esc(t)}</text>${sub?`<text x="${x}" y="${y+13}" text-anchor="middle" font-size="10" opacity=".7">${esc(sub)}</text>`:""}</g>`;
+    if(p){ s+=`<line x1="${cx}" y1="${cy-52}" x2="${cx}" y2="${28}" stroke="var(--line)" stroke-width="2" stroke-dasharray="4 4"/>`; s+=box(cx,24,Math.min(260,p.kidName.length*8+40),30,p.icon+" "+p.kidName,p.id,hueOf(p.id),"inside"); }
+    links.forEach((id,i)=>{ const t=byId.get(id);
+      const ang=(-Math.PI/2)+(Math.PI*2)*((i+0.5)/links.length); const rx=R+150, ry=R; const x=cx+Math.cos(ang)*rx, y=cy+Math.sin(ang)*ry;
+      s+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--line)" stroke-width="2"/>`;
+      s+=box(x,y,Math.min(190,t.kidName.length*7.5+36),32,t.icon+" "+t.kidName,id,hueOf(id),n.talksTo.includes(id)?"talks to":"talks to me"); });
+    s+=`<g style="--h:${hueOf(n.id)}"><circle cx="${cx}" cy="${cy}" r="46" fill="hsl(var(--h) var(--fs) var(--fl2))" stroke="hsl(var(--h) var(--fs) var(--fl))" stroke-width="3"/><text x="${cx}" y="${cy+10}" text-anchor="middle" font-size="30">${n.icon}</text></g>`;
+    return s+`</svg>`;
+  }
+  function renderDetail(){
+    const n=byId.get(state.sel), hue=hueOf(n.id), folder=folderOf.get(n.id), grown=state.level==="grown";
+    const inb=(inbound.get(n.id)||[]).filter(id=>!n.talksTo.includes(id));
+    detailEl.innerHTML=`
+      <nav class="crumbs" aria-label="Path">${crumbs(n.id)}</nav>
+      <div class="hero" style="--h:${hue}">
+        <div class="big" aria-hidden="true">${n.icon}</div>
+        <div><h1>${esc(n.kidName)}</h1><div class="gname">${esc(n.grownName)}</div>
+        ${folder&&folder!==n?`<span class="folderpill">${folder.icon} ${esc(folder.kidName)}</span>`:""}</div>
+      </div>
+      <div class="cards">
+        <div class="card kidcard"><h3>🧒 In kid words</h3><p>${esc(n.kid)}</p></div>
+        <div class="card"><h3>⭐ Why it matters</h3><p>${esc(n.why)}</p></div>
+        <div class="card"><h3>🌍 Real-world example</h3><p>${esc(n.example)}</p></div>
+      </div>
+      <details class="grown" ${grown?"open":""}><summary>🎓 For grown-ups${grown?"":" <span style='color:var(--muted);font-weight:500'>(tap to peek)</span>"}</summary><div class="body">${n.grownUp}</div></details>
+      ${n.children.length?`<div class="sect"><h2>📁 Inside this folder (${n.children.length})</h2><div class="grid-files">${n.children.map(c=>`<button class="file" data-go="${c.id}"><span class="fi">${c.icon}</span><span class="fk">${esc(c.kidName)}</span><span class="fg">${esc(c.grownName)}</span>${c.children.length?`<span class="fc">📁 ${c.children.length} inside</span>`:""}</button>`).join("")}</div></div>`:""}
+      ${n.talksTo.length?`<div class="sect"><h2>🔗 Talks to</h2><div class="chips">${n.talksTo.map(chip).join("")}</div></div>`:""}
+      ${inb.length?`<div class="sect"><h2>📣 Talked about by</h2><div class="chips">${inb.map(chip).join("")}</div></div>`:""}
+      ${(n.talksTo.length||parent.get(n.id))?`<div class="sect"><h2>🕸️ Neighbors</h2><div class="diagram">${neighborSVG(n)}</div></div>`:""}
+    `;
+  }
+  document.addEventListener("click",e=>{ const go=e.target.closest("[data-go]"); if(go){ e.preventDefault(); select(go.dataset.go); } });
+  document.addEventListener("keydown",e=>{ if((e.key==="Enter"||e.key===" ")&&e.target.matches("[data-go][role=link]")){ e.preventDefault(); select(e.target.dataset.go); } });
+
+  // ---------- map view ----------
+  function mapSVG(){
+    const W=1180; let y=16; const parts=[]; const LX=16, LW=690, XW=104, XG=12, XX0=LX+LW+20;
+    const chipW=t=>Math.min(170,Math.round(t.length*6.6)+30);
+    const lay=(id,title,ids,label)=>{ const n=byId.get(id); const hue=hueOf(id);
+      let cx=LX+14, cy=y+38, h=0; const rows=[]; ids.forEach(cid=>{ const c=byId.get(cid); const t=c.icon+" "+c.kidName; const w=chipW(t); if(cx+w>LX+LW-10){ cx=LX+14; cy+=30; } rows.push({x:cx,y:cy,w,t,id:cid}); cx+=w+6; });
+      h=(cy+30)-y+8;
+      parts.push(`<g class="layer"><g class="lk" data-go="${id}" style="--h:${hue}"><rect x="${LX}" y="${y}" width="${LW}" height="${h}" rx="14" fill="hsl(var(--h) var(--fs) var(--fl2))" stroke="hsl(var(--h) var(--fs) var(--fl))"/><text x="${LX+14}" y="${y+22}" font-size="15" font-weight="800">${esc(title)}</text><text x="${LX+LW-14}" y="${y+22}" font-size="11" text-anchor="end" opacity=".7">${esc(label)}</text></g>
+        ${rows.map(r=>`<g class="lk" data-go="${r.id}" style="--h:${hue}"><rect x="${r.x}" y="${r.y}" width="${r.w}" height="24" rx="8" fill="var(--panel)" stroke="hsl(var(--h) var(--fs) var(--fl))" stroke-width="1.5"/><text x="${r.x+r.w/2}" y="${r.y+16}" font-size="11.5" text-anchor="middle" font-weight="600">${esc(r.t.length>24?r.t.slice(0,23)+"…":r.t)}</text></g>`).join("")}</g>`);
+      y+=h;
+    };
+    const arrow=(label)=>{ parts.push(`<g><line x1="${LX+LW/2}" y1="${y+2}" x2="${LX+LW/2}" y2="${y+26}" stroke="var(--muted)" stroke-width="2"/><polygon points="${LX+LW/2-6},${y+8} ${LX+LW/2+6},${y+8} ${LX+LW/2},${y+2}" fill="var(--muted)"/><text x="${LX+LW/2+12}" y="${y+18}" font-size="11" fill="var(--muted)">${esc(label)}</text></g>`); y+=28; };
+    const yTop=y;
+    lay("apps","📱 Apps",["browser","messages","calls","photos","media","notes","maps","store","games","school","health","wallet-app","files-app","settings","camera","studio"],"what you use every day");
+    arrow("UI Kit · Scene API · Intents");
+    lay("playground","🎠 3D World & UI (Playground)",["world","rooms","avatars","renderer","physics","netcode","voice","vr","flat","input","a11y"],"the desktop is a place");
+    arrow("objects · events · permissions");
+    lay("toybox","🧸 Services (Toy Box, sync, updates)",["objects","versions","sync","sharing","search-index","crdt","backups","trash","updates","audit","permissions"],"system services in user space");
+    arrow("capabilities · IPC");
+    lay("kernel","🧠 Kernel (Engine Room)",["kernel","scheduler","memory","ipc","sandbox","boot","drivers"],"small, capability-secure core");
+    arrow("device drivers");
+    lay("engine","🔩 Hardware",["gpu","storage","power","sensors","audio-hw","wifi","secure-enclave"],"chips, radios, batteries");
+    const yBot=y;
+    // cross-cutting bars
+    const bars=[["locks","🔐 Locks & Keys",["identity","passkeys","permissions","encryption-rest","parental"]],["bridge","🌉 Bridge Protocol",["identity-addr","e2e","p2p","relays","realtime","gateway"]],["ledger","📒 Ledger Protocol",["wallets","transfers","approvals","receipts","bank-bridge","kyc"]],["robots","🤖 AI Harness",["assistant","agents","tools","memory-ai","rails","router"]]];
+    bars.forEach((b,i)=>{ const x=XX0+i*(XW+XG); const hue=hueOf(b[0]); const h=yBot-yTop;
+      parts.push(`<g class="lk" data-go="${b[0]}" style="--h:${hue}"><rect x="${x}" y="${yTop}" width="${XW}" height="${h}" rx="12" fill="hsl(var(--h) var(--fs) var(--fl2))" stroke="hsl(var(--h) var(--fs) var(--fl))" stroke-width="2"/><text transform="translate(${x+XW/2},${yTop+h-12}) rotate(-90)" font-size="13" font-weight="800" text-anchor="start">${esc(b[1])}</text></g>`);
+      b[2].forEach((cid,j)=>{ const c=byId.get(cid); parts.push(`<g class="lk" data-go="${cid}" style="--h:${hue}"><rect x="${x+6}" y="${yTop+10+j*40}" width="${XW-12}" height="34" rx="8" fill="var(--panel)" stroke="hsl(var(--h) var(--fs) var(--fl))" stroke-width="1.5"/><text x="${x+XW/2}" y="${yTop+10+j*40+15}" font-size="15" text-anchor="middle">${c.icon}</text><text x="${x+XW/2}" y="${yTop+10+j*40+28}" font-size="9.5" text-anchor="middle" font-weight="600">${esc(c.kidName.length>17?c.kidName.slice(0,16)+"…":c.kidName)}</text></g>`); });
+    });
+    y+=14;
+    // platforms strip
+    const plats=["phone","laptop","desktop","tablet","web","console","vr-headset","car","tv","watch"]; const pw=(W-32-9*8)/10;
+    parts.push(`<g class="lk" data-go="platforms" style="--h:${hueOf("platforms")}"><rect x="16" y="${y}" width="${W-32}" height="78" rx="14" fill="hsl(var(--h) var(--fs) var(--fl2))" stroke="hsl(var(--h) var(--fs) var(--fl))" stroke-width="2"/><text x="30" y="${y+20}" font-size="14" font-weight="800">🗺️ Where it runs — one codebase, every device</text></g>`);
+    plats.forEach((pid,i)=>{ const c=byId.get(pid); const x=16+i*(pw+8); parts.push(`<g class="lk" data-go="${pid}" style="--h:${hueOf("platforms")}"><rect x="${x+4}" y="${y+30}" width="${pw}" height="40" rx="8" fill="var(--panel)" stroke="hsl(var(--h) var(--fs) var(--fl))" stroke-width="1.5"/><text x="${x+4+pw/2}" y="${y+48}" font-size="16" text-anchor="middle">${c.icon}</text><text x="${x+4+pw/2}" y="${y+64}" font-size="10" text-anchor="middle" font-weight="600">${esc(c.grownName.length>16?c.kidName:c.grownName)}</text></g>`); });
+    y+=92;
+    // bottom row: workshop, rulebook, roadmap
+    const bw=(W-32-16)/3;
+    [["workshop","🛠️ Builder's Workshop","SDK, IDEs, store review"],["rulebook","📜 Rulebook","open standards, privacy, governance"],["roadmap","🛤️ Roadmap","4 phases, borrow open source"]].forEach((b,i)=>{ const x=16+i*(bw+8);
+      parts.push(`<g class="lk" data-go="${b[0]}" style="--h:${hueOf(b[0])}"><rect x="${x}" y="${y}" width="${bw}" height="54" rx="12" fill="hsl(var(--h) var(--fs) var(--fl2))" stroke="hsl(var(--h) var(--fs) var(--fl))" stroke-width="2"/><text x="${x+14}" y="${y+22}" font-size="14" font-weight="800">${esc(b[1])}</text><text x="${x+14}" y="${y+41}" font-size="11" opacity=".75">${esc(b[2])}</text></g>`); });
+    y+=70;
+    return `<svg viewBox="0 0 ${W} ${y}" role="img" aria-label="NovaOS layer map">${parts.join("")}</svg>`;
+  }
+  function renderMap(){
+    mapEl.innerHTML=`<h1>🕸️ How it all connects</h1><p class="lead">Read it from the bottom up: chips and radios at the bottom, the Brain on top of them, then the services that keep your stuff safe, then the 3D Playground, then the apps you touch. The four tall bars on the right run through every layer. Tap anything to open it.</p>
+      <div class="scroller">${mapSVG()}</div>
+      <div class="legend"><span><i style="background:hsl(215 var(--fs) var(--fl))"></i>Engine Room</span><span><i style="background:hsl(350 var(--fs) var(--fl))"></i>Locks & Keys</span><span><i style="background:hsl(35 var(--fs) var(--fl))"></i>Toy Box</span><span><i style="background:hsl(190 var(--fs) var(--fl))"></i>Post Office</span><span><i style="background:hsl(140 var(--fs) var(--fl))"></i>Piggy Bank</span><span><i style="background:hsl(280 var(--fs) var(--fl))"></i>Playground</span><span><i style="background:hsl(255 var(--fs) var(--fl))"></i>Robot Helpers</span><span><i style="background:hsl(95 var(--fs) var(--fl))"></i>Apps</span></div>`;
+  }
+  function setView(v,silent){
+    state.view=v; $("viewExplorer").setAttribute("aria-pressed",v==="explorer"); $("viewMap").setAttribute("aria-pressed",v==="map");
+    detailEl.hidden=v!=="explorer"; mapEl.hidden=v!=="map"; $("rightHead").firstChild.textContent=v==="map"?"🕸️ Layer map":"📄 Details";
+    if(v==="map") renderMap();
+  }
+  $("viewExplorer").onclick=()=>setView("explorer"); $("viewMap").onclick=()=>setView("map");
+
+  // ---------- level, theme, search, drawer ----------
+  function setLevel(l){ state.level=l; document.body.dataset.level=l; $("lvlKid").setAttribute("aria-pressed",l==="kid"); $("lvlGrown").setAttribute("aria-pressed",l==="grown"); try{localStorage.setItem("nova.level",l);}catch(e){} renderDetail(); }
+  $("lvlKid").onclick=()=>setLevel("kid"); $("lvlGrown").onclick=()=>setLevel("grown");
+  $("themeBtn").onclick=()=>{ const r=document.documentElement; const cur=r.dataset.theme||"system"; const next=cur==="system"?"light":cur==="light"?"dark":"system";
+    if(next==="system") delete r.dataset.theme; else r.dataset.theme=next; $("themeBtn").textContent=next==="light"?"☀️":next==="dark"?"🌙":"🌗"; $("themeBtn").title="Theme: "+next; try{ next==="system"?localStorage.removeItem("nova.theme"):localStorage.setItem("nova.theme",next);}catch(e){} };
+  (function(){ const t=document.documentElement.dataset.theme; if(t) $("themeBtn").textContent=t==="light"?"☀️":"🌙"; })();
+  let st; $("search").addEventListener("input",e=>{ clearTimeout(st); st=setTimeout(()=>applySearch(e.target.value),80); });
+  $("search").addEventListener("keydown",e=>{ if(e.key==="Enter"){ const first=treeEl.querySelector(".node mark"); if(first){ select(first.closest(".node").dataset.id); } } if(e.key==="Escape"){ e.target.value=""; applySearch(""); } });
+  $("clearSearch").onclick=()=>{ $("search").value=""; applySearch(""); $("search").focus(); };
+  $("drawerBtn").onclick=()=>document.body.classList.add("drawer-open");
+  $("drawerClose").onclick=()=>document.body.classList.remove("drawer-open");
+  $("scrim").onclick=()=>document.body.classList.remove("drawer-open");
+  document.addEventListener("keydown",e=>{ if(e.key==="/"&&!/input|textarea/i.test(e.target.tagName)){ e.preventDefault(); $("search").focus(); } if(e.key==="Escape") document.body.classList.remove("drawer-open"); });
+  window.addEventListener("hashchange",()=>{ const id=location.hash.slice(1); if(id&&byId.has(id)&&id!==state.sel) select(id); });
+
+  // ---------- boot ----------
+  document.body.dataset.level=state.level; $("lvlKid").setAttribute("aria-pressed",state.level==="kid"); $("lvlGrown").setAttribute("aria-pressed",state.level==="grown");
+  const start=location.hash.slice(1); select(byId.has(start)?start:"nova");
+  window.NOVA={nodes:ALL,byId,ROOT};
+})();
+</script>
